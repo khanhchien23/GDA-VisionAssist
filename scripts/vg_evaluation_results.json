@@ -1,0 +1,1073 @@
+{
+  "summary": {
+    "num_samples": 100,
+    "skipped": 0,
+    "pipeline": {
+      "BLEU-1": 0.022356288419057426,
+      "BLEU-4": 0.0,
+      "ROUGE-L": 0.031671811358183276,
+      "CIDEr": 0.1589946506130268,
+      "Object_Acc": 0.03666666666666666
+    },
+    "baseline": {
+      "BLEU-1": 0.024234794764972076,
+      "BLEU-4": 0.0,
+      "ROUGE-L": 0.03473662825782688,
+      "CIDEr": 0.1895538950722923,
+      "Object_Acc": 0.03666666666666667
+    }
+  },
+  "detailed_results": [
+    {
+      "id": "unknown",
+      "ground_truth": "the road has yellow stripes",
+      "pipeline_output": "A black car. The marked region is a black car on a white background",
+      "baseline_output": "a black car",
+      "pipeline_metrics": {
+        "BLEU-1": 0.07142857142857141,
+        "BLEU-4": 0.0,
+        "ROUGE-L": 0.11509433962264153,
+        "CIDEr": 0.2282177322938192,
+        "Object_Acc": 0.0
+      },
+      "baseline_metrics": {
+        "BLEU-1": 0.0,
+        "BLEU-4": 0.0,
+        "ROUGE-L": 0.0,
+        "CIDEr": 0.0,
+        "Object_Acc": 0.0
+      },
+      "image_path": "c:\\Downloads\\ud\\VG_100K\\23.jpg"
+    },
+    {
+      "id": "unknown",
+      "ground_truth": "Nose of boy",
+      "pipeline_output": "A hand on white background. Please note that this is an image and not a description of any object in it",
+      "baseline_output": "A yellow flower",
+      "pipeline_metrics": {
+        "BLEU-1": 0.047619047619047616,
+        "BLEU-4": 0.0,
+        "ROUGE-L": 0.09636650868878356,
+        "CIDEr": 0.4012861769525641,
+        "Object_Acc": 0.0
+      },
+      "baseline_metrics": {
+        "BLEU-1": 0.0,
+        "BLEU-4": 0.0,
+        "ROUGE-L": 0.0,
+        "CIDEr": 0.0,
+        "Object_Acc": 0.0
+      },
+      "image_path": "c:\\Downloads\\ud\\VG_100K\\61545.jpg"
+    },
+    {
+      "id": "unknown",
+      "ground_truth": "glass window on building",
+      "pipeline_output": "A brick wall. The marked region is a brick wall on a white background",
+      "baseline_output": "a black building",
+      "pipeline_metrics": {
+        "BLEU-1": 0.07142857142857141,
+        "BLEU-4": 0.0,
+        "ROUGE-L": 0.1234817813765182,
+        "CIDEr": 0.2551551815399144,
+        "Object_Acc": 0.0
+      },
+      "baseline_metrics": {
+        "BLEU-1": 0.23884377019126307,
+        "BLEU-4": 0.0,
+        "ROUGE-L": 0.2785388127853881,
+        "CIDEr": 0.9622504486493765,
+        "Object_Acc": 0.3333333333333333
+      },
+      "image_path": "c:\\Downloads\\ud\\VG_100K\\61546.jpg"
+    },
+    {
+      "id": "unknown",
+      "ground_truth": "guys hanging out at the skate park",
+      "pipeline_output": "A skateboarder in mid-air. The caption is misleading as it mentions an apple and a blue sky, which do not appear in the image",
+      "baseline_output": "a red apple(199,13),(409,175)",
+      "pipeline_metrics": {
+        "BLEU-1": 0.041666666666666664,
+        "BLEU-4": 0.0,
+        "ROUGE-L": 0.07159624413145539,
+        "CIDEr": 0.3450327796711771,
+        "Object_Acc": 0.0
+      },
+      "baseline_metrics": {
+        "BLEU-1": 0.0,
+        "BLEU-4": 0.0,
+        "ROUGE-L": 0.0,
+        "CIDEr": 0.0,
+        "Object_Acc": 0.0
+      },
+      "image_path": "c:\\Downloads\\ud\\VG_100K\\61526.jpg"
+    },
+    {
+      "id": "unknown",
+      "ground_truth": "A bear muzzle and a bear paw",
+      "pipeline_output": "A brown bear lying in grass. It has black eyes and nose. The bear is resting on its front paws",
+      "baseline_output": "a brown bear's face and paws in the grass",
+      "pipeline_metrics": {
+        "BLEU-1": 0.2,
+        "BLEU-4": 0.0,
+        "ROUGE-L": 0.324468085106383,
+        "CIDEr": 1.1249426064331438,
+        "Object_Acc": 0.3333333333333333
+      },
+      "baseline_metrics": {
+        "BLEU-1": 0.2222222222222222,
+        "BLEU-4": 0.0,
+        "ROUGE-L": 0.2557651991614256,
+        "CIDEr": 0.7537783614444091,
+        "Object_Acc": 0.0
+      },
+      "image_path": "c:\\Downloads\\ud\\VG_100K\\61518.jpg"
+    },
+    {
+      "id": "unknown",
+      "ground_truth": "Crumbs on a white plate",
+      "pipeline_output": "A white plate with a fork on it. The marked region is a rectangular box around the plate and fork",
+      "baseline_output": "a white plate",
+      "pipeline_metrics": {
+        "BLEU-1": 0.2,
+        "BLEU-4": 0.0,
+        "ROUGE-L": 0.2691176470588235,
+        "CIDEr": 2.297242719719956,
+        "Object_Acc": 0.6666666666666666
+      },
+      "baseline_metrics": {
+        "BLEU-1": 0.513417119032592,
+        "BLEU-4": 0.0,
+        "ROUGE-L": 0.7176470588235294,
+        "CIDEr": 6.863512398725522,
+        "Object_Acc": 0.6666666666666666
+      },
+      "image_path": "c:\\Downloads\\ud\\VG_100K\\6.jpg"
+    },
+    {
+      "id": "unknown",
+      "ground_truth": "the window is the source of light",
+      "pipeline_output": "A flowerpot filled with colorful flowers. The marked area is an image of a flowerpot placed on a windowsill. The pot contains vibrant plants that add life to the scene",
+      "baseline_output": "a red flower",
+      "pipeline_metrics": {
+        "BLEU-1": 0.13333333333333333,
+        "BLEU-4": 0.0,
+        "ROUGE-L": 0.18263473053892215,
+        "CIDEr": 1.005037815259212,
+        "Object_Acc": 0.0
+      },
+      "baseline_metrics": {
+        "BLEU-1": 0.0,
+        "BLEU-4": 0.0,
+        "ROUGE-L": 0.0,
+        "CIDEr": 0.0,
+        "Object_Acc": 0.0
+      },
+      "image_path": "c:\\Downloads\\ud\\VG_100K\\36.jpg"
+    },
+    {
+      "id": "unknown",
+      "ground_truth": "Colorful photo hanging on the wall",
+      "pipeline_output": "A green laptop screen. The image only contains one object on white background",
+      "baseline_output": "A pink and purple abstract painting.",
+      "pipeline_metrics": {
+        "BLEU-1": 0.15384615384615385,
+        "BLEU-4": 0.0,
+        "ROUGE-L": 0.11275415896487984,
+        "CIDEr": 0.5661385170722979,
+        "Object_Acc": 0.0
+      },
+      "baseline_metrics": {
+        "BLEU-1": 0.0,
+        "BLEU-4": 0.0,
+        "ROUGE-L": 0.0,
+        "CIDEr": 0.0,
+        "Object_Acc": 0.0
+      },
+      "image_path": "c:\\Downloads\\ud\\VG_100K\\3.jpg"
+    },
+    {
+      "id": "unknown",
+      "ground_truth": "the gloves are white",
+      "pipeline_output": "A white object in a green frame on a white background. It appears to be a toy or small item",
+      "baseline_output": "A blue and white striped shirt",
+      "pipeline_metrics": {
+        "BLEU-1": 0.05000000000000001,
+        "BLEU-4": 0.0,
+        "ROUGE-L": 0.09472049689440994,
+        "CIDEr": 0.42874646285627205,
+        "Object_Acc": 0.5
+      },
+      "baseline_metrics": {
+        "BLEU-1": 0.16666666666666669,
+        "BLEU-4": 0.0,
+        "ROUGE-L": 0.2074829931972789,
+        "CIDEr": 0.5103103630798288,
+        "Object_Acc": 0.5
+      },
+      "image_path": "c:\\Downloads\\ud\\VG_100K\\61579.jpg"
+    },
+    {
+      "id": "unknown",
+      "ground_truth": "road ",
+      "pipeline_output": "A truck on the road. The truck is orange and has three wheels visible in the image",
+      "baseline_output": "a white line on the road",
+      "pipeline_metrics": {
+        "BLEU-1": 0.0588235294117647,
+        "BLEU-4": 0.0,
+        "ROUGE-L": 0.13232104121475052,
+        "CIDEr": 2.0,
+        "Object_Acc": 1.0
+      },
+      "baseline_metrics": {
+        "BLEU-1": 0.16666666666666669,
+        "BLEU-4": 0.0,
+        "ROUGE-L": 0.3279569892473118,
+        "CIDEr": 4.08248290463863,
+        "Object_Acc": 1.0
+      },
+      "image_path": "c:\\Downloads\\ud\\VG_100K\\61558.jpg"
+    },
+    {
+      "id": "unknown",
+      "ground_truth": "there is a liner in the picture",
+      "pipeline_output": "A tramway. The image shows a tramway on a street in an urban area. The tram is moving along a track and is surrounded by palm trees and tall buildings. There are also several cars parked or driving nearby",
+      "baseline_output": "a green train",
+      "pipeline_metrics": {
+        "BLEU-1": 0.1282051282051282,
+        "BLEU-4": 0.0,
+        "ROUGE-L": 0.1491442542787286,
+        "CIDEr": 1.2301695782628073,
+        "Object_Acc": 0.0
+      },
+      "baseline_metrics": {
+        "BLEU-1": 0.08786571270524224,
+        "BLEU-4": 0.0,
+        "ROUGE-L": 0.18654434250764526,
+        "CIDEr": 0.727392967453308,
+        "Object_Acc": 0.0
+      },
+      "image_path": "c:\\Downloads\\ud\\VG_100K\\22.jpg"
+    },
+    {
+      "id": "unknown",
+      "ground_truth": "Shadows of palm trees on the road",
+      "pipeline_output": "A single object on white background, highlighted in red and yellow. It is a bird",
+      "baseline_output": "a white cloud",
+      "pipeline_metrics": {
+        "BLEU-1": 0.06666666666666667,
+        "BLEU-4": 0.0,
+        "ROUGE-L": 0.09728867623604465,
+        "CIDEr": 0.2291746242570528,
+        "Object_Acc": 0.0
+      },
+      "baseline_metrics": {
+        "BLEU-1": 0.0,
+        "BLEU-4": 0.0,
+        "ROUGE-L": 0.0,
+        "CIDEr": 0.0,
+        "Object_Acc": 0.0
+      },
+      "image_path": "c:\\Downloads\\ud\\VG_100K\\22.jpg"
+    },
+    {
+      "id": "unknown",
+      "ground_truth": "White papers with writing on it",
+      "pipeline_output": "A notebook or document with handwritten notes and references to Reuters logos. It appears to be a research or study material",
+      "baseline_output": "a white paper",
+      "pipeline_metrics": {
+        "BLEU-1": 0.09523809523809525,
+        "BLEU-4": 0.0,
+        "ROUGE-L": 0.16464237516869096,
+        "CIDEr": 0.39283710065919303,
+        "Object_Acc": 0.0
+      },
+      "baseline_metrics": {
+        "BLEU-1": 0.12262648039048077,
+        "BLEU-4": 0.0,
+        "ROUGE-L": 0.20962199312714777,
+        "CIDEr": 0.7856742013183862,
+        "Object_Acc": 0.3333333333333333
+      },
+      "image_path": "c:\\Downloads\\ud\\VG_100K\\61540.jpg"
+    },
+    {
+      "id": "unknown",
+      "ground_truth": "Forehead of a doll",
+      "pipeline_output": "A green rectangle on white background. The object inside is a small square",
+      "baseline_output": "a white wall",
+      "pipeline_metrics": {
+        "BLEU-1": 0.07692307692307693,
+        "BLEU-4": 0.0,
+        "ROUGE-L": 0.1300639658848614,
+        "CIDEr": 0.6454972243679027,
+        "Object_Acc": 0.0
+      },
+      "baseline_metrics": {
+        "BLEU-1": 0.23884377019126307,
+        "BLEU-4": 0.0,
+        "ROUGE-L": 0.2785388127853881,
+        "CIDEr": 0.9622504486493765,
+        "Object_Acc": 0.0
+      },
+      "image_path": "c:\\Downloads\\ud\\VG_100K\\61527.jpg"
+    },
+    {
+      "id": "unknown",
+      "ground_truth": "the is a rug on the floor",
+      "pipeline_output": "A red stripe on white background. Note: The actual image provided is not visible in this text-based interface",
+      "baseline_output": "a brown table",
+      "pipeline_metrics": {
+        "BLEU-1": 0.2222222222222222,
+        "BLEU-4": 0.0,
+        "ROUGE-L": 0.26068376068376065,
+        "CIDEr": 0.9820927516479827,
+        "Object_Acc": 0.0
+      },
+      "baseline_metrics": {
+        "BLEU-1": 0.08786571270524224,
+        "BLEU-4": 0.0,
+        "ROUGE-L": 0.18654434250764526,
+        "CIDEr": 0.6415002990995843,
+        "Object_Acc": 0.0
+      },
+      "image_path": "c:\\Downloads\\ud\\VG_100K\\33.jpg"
+    },
+    {
+      "id": "unknown",
+      "ground_truth": "black mouse is on the desk",
+      "pipeline_output": "A small object inside a rectangular frame on white background. It is a black and brown object within a green border",
+      "baseline_output": "A red apple",
+      "pipeline_metrics": {
+        "BLEU-1": 0.14285714285714285,
+        "BLEU-4": 0.0,
+        "ROUGE-L": 0.08232118758434548,
+        "CIDEr": 0.5175491695067657,
+        "Object_Acc": 0.3333333333333333
+      },
+      "baseline_metrics": {
+        "BLEU-1": 0.0,
+        "BLEU-4": 0.0,
+        "ROUGE-L": 0.0,
+        "CIDEr": 0.0,
+        "Object_Acc": 0.0
+      },
+      "image_path": "c:\\Downloads\\ud\\VG_100K\\11.jpg"
+    },
+    {
+      "id": "unknown",
+      "ground_truth": "a wood and metal chair",
+      "pipeline_output": "A desk and chair on a floor. Note: The image provided is not clear enough to accurately describe the object in the marked area",
+      "baseline_output": "a yellow chair",
+      "pipeline_metrics": {
+        "BLEU-1": 0.12500000000000003,
+        "BLEU-4": 0.0,
+        "ROUGE-L": 0.23461538461538461,
+        "CIDEr": 0.7905694150420949,
+        "Object_Acc": 0.3333333333333333
+      },
+      "baseline_metrics": {
+        "BLEU-1": 0.3422780793550613,
+        "BLEU-4": 0.0,
+        "ROUGE-L": 0.47843137254901963,
+        "CIDEr": 1.7213259316477405,
+        "Object_Acc": 0.3333333333333333
+      },
+      "image_path": "c:\\Downloads\\ud\\VG_100K\\61545.jpg"
+    },
+    {
+      "id": "unknown",
+      "ground_truth": "there is a mug on the desk",
+      "pipeline_output": "A cup of coffee on the desk. Note: The image provided is incomplete and does not contain any other objects besides the cup of",
+      "baseline_output": "a brown wooden desk",
+      "pipeline_metrics": {
+        "BLEU-1": 0.20833333333333334,
+        "BLEU-4": 0.0,
+        "ROUGE-L": 0.28638497652582157,
+        "CIDEr": 1.7809704539915485,
+        "Object_Acc": 0.5
+      },
+      "baseline_metrics": {
+        "BLEU-1": 0.23618327637050734,
+        "BLEU-4": 0.0,
+        "ROUGE-L": 0.346590909090909,
+        "CIDEr": 0.944911182523068,
+        "Object_Acc": 0.5
+      },
+      "image_path": "c:\\Downloads\\ud\\VG_100K\\34.jpg"
+    },
+    {
+      "id": "unknown",
+      "ground_truth": "PIECE OF PAPER ON THE FLOOR",
+      "pipeline_output": "A newspaper on a table. The image only shows one object - a newspaper placed on a surface",
+      "baseline_output": "a red apple",
+      "pipeline_metrics": {
+        "BLEU-1": 0.11764705882352941,
+        "BLEU-4": 0.0,
+        "ROUGE-L": 0.19032761310452417,
+        "CIDEr": 0.5330017908890262,
+        "Object_Acc": 0.0
+      },
+      "baseline_metrics": {
+        "BLEU-1": 0.0,
+        "BLEU-4": 0.0,
+        "ROUGE-L": 0.0,
+        "CIDEr": 0.0,
+        "Object_Acc": 0.0
+      },
+      "image_path": "c:\\Downloads\\ud\\VG_100K\\61562.jpg"
+    },
+    {
+      "id": "unknown",
+      "ground_truth": "a pen is on the desk",
+      "pipeline_output": "Lỗi tạo câu trả lời: CUDA error: device-side assert triggered\nCUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.\nFor debugging consider passing CUDA_LAUNCH_BLOCKING=1\nCompile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.\n",
+      "baseline_output": "",
+      "pipeline_metrics": {
+        "BLEU-1": 0.024390243902439022,
+        "BLEU-4": 0.0,
+        "ROUGE-L": 0.04915390813859791,
+        "CIDEr": 0.1458029608799511,
+        "Object_Acc": 0.0
+      },
+      "baseline_metrics": {
+        "BLEU-1": 0.0,
+        "BLEU-4": 0.0,
+        "ROUGE-L": 0.0,
+        "CIDEr": 0.0,
+        "Object_Acc": 0.0
+      },
+      "image_path": "c:\\Downloads\\ud\\VG_100K\\3.jpg"
+    },
+    {
+      "id": "unknown",
+      "ground_truth": "Red brick and metal fence ",
+      "pipeline_output": "Không thể phân tích ảnh.",
+      "baseline_output": "",
+      "pipeline_metrics": {
+        "BLEU-1": 0.0,
+        "BLEU-4": 0.0,
+        "ROUGE-L": 0.0,
+        "CIDEr": 0.0,
+        "Object_Acc": 0.0
+      },
+      "baseline_metrics": {
+        "BLEU-1": 0.0,
+        "BLEU-4": 0.0,
+        "ROUGE-L": 0.0,
+        "CIDEr": 0.0,
+        "Object_Acc": 0.0
+      },
+      "image_path": "c:\\Downloads\\ud\\VG_100K\\61558.jpg"
+    },
+    {
+      "id": "unknown",
+      "ground_truth": "white flowers in meadow",
+      "pipeline_output": "Không thể phân tích ảnh.",
+      "baseline_output": "",
+      "pipeline_metrics": {
+        "BLEU-1": 0.0,
+        "BLEU-4": 0.0,
+        "ROUGE-L": 0.0,
+        "CIDEr": 0.0,
+        "Object_Acc": 0.0
+      },
+      "baseline_metrics": {
+        "BLEU-1": 0.0,
+        "BLEU-4": 0.0,
+        "ROUGE-L": 0.0,
+        "CIDEr": 0.0,
+        "Object_Acc": 0.0
+      },
+      "image_path": "c:\\Downloads\\ud\\VG_100K\\61518.jpg"
+    },
+    {
+      "id": "unknown",
+      "ground_truth": "Yellow pointy beak of a bird.",
+      "pipeline_output": "Không thể phân tích ảnh.",
+      "baseline_output": "",
+      "pipeline_metrics": {
+        "BLEU-1": 0.0,
+        "BLEU-4": 0.0,
+        "ROUGE-L": 0.0,
+        "CIDEr": 0.0,
+        "Object_Acc": 0.0
+      },
+      "baseline_metrics": {
+        "BLEU-1": 0.0,
+        "BLEU-4": 0.0,
+        "ROUGE-L": 0.0,
+        "CIDEr": 0.0,
+        "Object_Acc": 0.0
+      },
+      "image_path": "c:\\Downloads\\ud\\VG_100K\\61594.jpg"
+    },
+    {
+      "id": "unknown",
+      "ground_truth": "A wall on the side of a building",
+      "pipeline_output": "Không thể phân tích ảnh.",
+      "baseline_output": "",
+      "pipeline_metrics": {
+        "BLEU-1": 0.0,
+        "BLEU-4": 0.0,
+        "ROUGE-L": 0.0,
+        "CIDEr": 0.0,
+        "Object_Acc": 0.0
+      },
+      "baseline_metrics": {
+        "BLEU-1": 0.0,
+        "BLEU-4": 0.0,
+        "ROUGE-L": 0.0,
+        "CIDEr": 0.0,
+        "Object_Acc": 0.0
+      },
+      "image_path": "c:\\Downloads\\ud\\VG_100K\\61546.jpg"
+    },
+    {
+      "id": "unknown",
+      "ground_truth": "Red and white traffic sign on pole",
+      "pipeline_output": "Không thể phân tích ảnh.",
+      "baseline_output": "",
+      "pipeline_metrics": {
+        "BLEU-1": 0.0,
+        "BLEU-4": 0.0,
+        "ROUGE-L": 0.0,
+        "CIDEr": 0.0,
+        "Object_Acc": 0.0
+      },
+      "baseline_metrics": {
+        "BLEU-1": 0.0,
+        "BLEU-4": 0.0,
+        "ROUGE-L": 0.0,
+        "CIDEr": 0.0,
+        "Object_Acc": 0.0
+      },
+      "image_path": "c:\\Downloads\\ud\\VG_100K\\231.jpg"
+    },
+    {
+      "id": "unknown",
+      "ground_truth": "The boy is wearing jeans.",
+      "pipeline_output": "Không thể phân tích ảnh.",
+      "baseline_output": "",
+      "pipeline_metrics": {
+        "BLEU-1": 0.0,
+        "BLEU-4": 0.0,
+        "ROUGE-L": 0.0,
+        "CIDEr": 0.0,
+        "Object_Acc": 0.0
+      },
+      "baseline_metrics": {
+        "BLEU-1": 0.0,
+        "BLEU-4": 0.0,
+        "ROUGE-L": 0.0,
+        "CIDEr": 0.0,
+        "Object_Acc": 0.0
+      },
+      "image_path": "c:\\Downloads\\ud\\VG_100K\\61574.jpg"
+    },
+    {
+      "id": "unknown",
+      "ground_truth": "red fence behind vehicle",
+      "pipeline_output": "Không thể phân tích ảnh.",
+      "baseline_output": "",
+      "pipeline_metrics": {
+        "BLEU-1": 0.0,
+        "BLEU-4": 0.0,
+        "ROUGE-L": 0.0,
+        "CIDEr": 0.0,
+        "Object_Acc": 0.0
+      },
+      "baseline_metrics": {
+        "BLEU-1": 0.0,
+        "BLEU-4": 0.0,
+        "ROUGE-L": 0.0,
+        "CIDEr": 0.0,
+        "Object_Acc": 0.0
+      },
+      "image_path": "c:\\Downloads\\ud\\VG_100K\\61558.jpg"
+    },
+    {
+      "id": "unknown",
+      "ground_truth": "THERE ARE LOTS OF TREES OUT THERE",
+      "pipeline_output": "Không thể phân tích ảnh.",
+      "baseline_output": "",
+      "pipeline_metrics": {
+        "BLEU-1": 0.0,
+        "BLEU-4": 0.0,
+        "ROUGE-L": 0.0,
+        "CIDEr": 0.0,
+        "Object_Acc": 0.0
+      },
+      "baseline_metrics": {
+        "BLEU-1": 0.0,
+        "BLEU-4": 0.0,
+        "ROUGE-L": 0.0,
+        "CIDEr": 0.0,
+        "Object_Acc": 0.0
+      },
+      "image_path": "c:\\Downloads\\ud\\VG_100K\\61544.jpg"
+    },
+    {
+      "id": "unknown",
+      "ground_truth": "power lines above the buildings",
+      "pipeline_output": "Không thể phân tích ảnh.",
+      "baseline_output": "",
+      "pipeline_metrics": {
+        "BLEU-1": 0.0,
+        "BLEU-4": 0.0,
+        "ROUGE-L": 0.0,
+        "CIDEr": 0.0,
+        "Object_Acc": 0.0
+      },
+      "baseline_metrics": {
+        "BLEU-1": 0.0,
+        "BLEU-4": 0.0,
+        "ROUGE-L": 0.0,
+        "CIDEr": 0.0,
+        "Object_Acc": 0.0
+      },
+      "image_path": "c:\\Downloads\\ud\\VG_100K\\61546.jpg"
+    },
+    {
+      "id": "unknown",
+      "ground_truth": "there are tiles on the photo",
+      "pipeline_output": "Không thể phân tích ảnh.",
+      "baseline_output": "",
+      "pipeline_metrics": {
+        "BLEU-1": 0.0,
+        "BLEU-4": 0.0,
+        "ROUGE-L": 0.0,
+        "CIDEr": 0.0,
+        "Object_Acc": 0.0
+      },
+      "baseline_metrics": {
+        "BLEU-1": 0.0,
+        "BLEU-4": 0.0,
+        "ROUGE-L": 0.0,
+        "CIDEr": 0.0,
+        "Object_Acc": 0.0
+      },
+      "image_path": "c:\\Downloads\\ud\\VG_100K\\41.jpg"
+    },
+    {
+      "id": "unknown",
+      "ground_truth": "a duck on the toilet",
+      "pipeline_output": "Không thể phân tích ảnh.",
+      "baseline_output": "",
+      "pipeline_metrics": {
+        "BLEU-1": 0.0,
+        "BLEU-4": 0.0,
+        "ROUGE-L": 0.0,
+        "CIDEr": 0.0,
+        "Object_Acc": 0.0
+      },
+      "baseline_metrics": {
+        "BLEU-1": 0.0,
+        "BLEU-4": 0.0,
+        "ROUGE-L": 0.0,
+        "CIDEr": 0.0,
+        "Object_Acc": 0.0
+      },
+      "image_path": "c:\\Downloads\\ud\\VG_100K\\61527.jpg"
+    },
+    {
+      "id": "unknown",
+      "ground_truth": "a young lamb withe the number 70 written on its coat",
+      "pipeline_output": "Không thể phân tích ảnh.",
+      "baseline_output": "",
+      "pipeline_metrics": {
+        "BLEU-1": 0.0,
+        "BLEU-4": 0.0,
+        "ROUGE-L": 0.0,
+        "CIDEr": 0.0,
+        "Object_Acc": 0.0
+      },
+      "baseline_metrics": {
+        "BLEU-1": 0.0,
+        "BLEU-4": 0.0,
+        "ROUGE-L": 0.0,
+        "CIDEr": 0.0,
+        "Object_Acc": 0.0
+      },
+      "image_path": "c:\\Downloads\\ud\\VG_100K\\61544.jpg"
+    },
+    {
+      "id": "unknown",
+      "ground_truth": "a container is on the cooker",
+      "pipeline_output": "Không thể phân tích ảnh.",
+      "baseline_output": "",
+      "pipeline_metrics": {
+        "BLEU-1": 0.0,
+        "BLEU-4": 0.0,
+        "ROUGE-L": 0.0,
+        "CIDEr": 0.0,
+        "Object_Acc": 0.0
+      },
+      "baseline_metrics": {
+        "BLEU-1": 0.0,
+        "BLEU-4": 0.0,
+        "ROUGE-L": 0.0,
+        "CIDEr": 0.0,
+        "Object_Acc": 0.0
+      },
+      "image_path": "c:\\Downloads\\ud\\VG_100K\\36.jpg"
+    },
+    {
+      "id": "unknown",
+      "ground_truth": "black pen with white markings",
+      "pipeline_output": "Không thể phân tích ảnh.",
+      "baseline_output": "",
+      "pipeline_metrics": {
+        "BLEU-1": 0.0,
+        "BLEU-4": 0.0,
+        "ROUGE-L": 0.0,
+        "CIDEr": 0.0,
+        "Object_Acc": 0.0
+      },
+      "baseline_metrics": {
+        "BLEU-1": 0.0,
+        "BLEU-4": 0.0,
+        "ROUGE-L": 0.0,
+        "CIDEr": 0.0,
+        "Object_Acc": 0.0
+      },
+      "image_path": "c:\\Downloads\\ud\\VG_100K\\61540.jpg"
+    },
+    {
+      "id": "unknown",
+      "ground_truth": "it is an indoor scene",
+      "pipeline_output": "Không thể phân tích ảnh.",
+      "baseline_output": "",
+      "pipeline_metrics": {
+        "BLEU-1": 0.0,
+        "BLEU-4": 0.0,
+        "ROUGE-L": 0.0,
+        "CIDEr": 0.0,
+        "Object_Acc": 0.0
+      },
+      "baseline_metrics": {
+        "BLEU-1": 0.0,
+        "BLEU-4": 0.0,
+        "ROUGE-L": 0.0,
+        "CIDEr": 0.0,
+        "Object_Acc": 0.0
+      },
+      "image_path": "c:\\Downloads\\ud\\VG_100K\\13.jpg"
+    },
+    {
+      "id": "unknown",
+      "ground_truth": "a black number 2",
+      "pipeline_output": "Không thể phân tích ảnh.",
+      "baseline_output": "",
+      "pipeline_metrics": {
+        "BLEU-1": 0.0,
+        "BLEU-4": 0.0,
+        "ROUGE-L": 0.0,
+        "CIDEr": 0.0,
+        "Object_Acc": 0.0
+      },
+      "baseline_metrics": {
+        "BLEU-1": 0.0,
+        "BLEU-4": 0.0,
+        "ROUGE-L": 0.0,
+        "CIDEr": 0.0,
+        "Object_Acc": 0.0
+      },
+      "image_path": "c:\\Downloads\\ud\\VG_100K\\61567.jpg"
+    },
+    {
+      "id": "unknown",
+      "ground_truth": "an orange carrot stick",
+      "pipeline_output": "Không thể phân tích ảnh.",
+      "baseline_output": "",
+      "pipeline_metrics": {
+        "BLEU-1": 0.0,
+        "BLEU-4": 0.0,
+        "ROUGE-L": 0.0,
+        "CIDEr": 0.0,
+        "Object_Acc": 0.0
+      },
+      "baseline_metrics": {
+        "BLEU-1": 0.0,
+        "BLEU-4": 0.0,
+        "ROUGE-L": 0.0,
+        "CIDEr": 0.0,
+        "Object_Acc": 0.0
+      },
+      "image_path": "c:\\Downloads\\ud\\VG_100K\\61596.jpg"
+    },
+    {
+      "id": "unknown",
+      "ground_truth": "A girl was orange and white shoes",
+      "pipeline_output": "Không thể phân tích ảnh.",
+      "baseline_output": "",
+      "pipeline_metrics": {
+        "BLEU-1": 0.0,
+        "BLEU-4": 0.0,
+        "ROUGE-L": 0.0,
+        "CIDEr": 0.0,
+        "Object_Acc": 0.0
+      },
+      "baseline_metrics": {
+        "BLEU-1": 0.0,
+        "BLEU-4": 0.0,
+        "ROUGE-L": 0.0,
+        "CIDEr": 0.0,
+        "Object_Acc": 0.0
+      },
+      "image_path": "c:\\Downloads\\ud\\VG_100K\\61583.jpg"
+    },
+    {
+      "id": "unknown",
+      "ground_truth": "A small tree in grass",
+      "pipeline_output": "Không thể phân tích ảnh.",
+      "baseline_output": "",
+      "pipeline_metrics": {
+        "BLEU-1": 0.0,
+        "BLEU-4": 0.0,
+        "ROUGE-L": 0.0,
+        "CIDEr": 0.0,
+        "Object_Acc": 0.0
+      },
+      "baseline_metrics": {
+        "BLEU-1": 0.0,
+        "BLEU-4": 0.0,
+        "ROUGE-L": 0.0,
+        "CIDEr": 0.0,
+        "Object_Acc": 0.0
+      },
+      "image_path": "c:\\Downloads\\ud\\VG_100K\\61535.jpg"
+    },
+    {
+      "id": "unknown",
+      "ground_truth": "there is a desktop computer on the desk",
+      "pipeline_output": "Không thể phân tích ảnh.",
+      "baseline_output": "",
+      "pipeline_metrics": {
+        "BLEU-1": 0.0,
+        "BLEU-4": 0.0,
+        "ROUGE-L": 0.0,
+        "CIDEr": 0.0,
+        "Object_Acc": 0.0
+      },
+      "baseline_metrics": {
+        "BLEU-1": 0.0,
+        "BLEU-4": 0.0,
+        "ROUGE-L": 0.0,
+        "CIDEr": 0.0,
+        "Object_Acc": 0.0
+      },
+      "image_path": "c:\\Downloads\\ud\\VG_100K\\12.jpg"
+    },
+    {
+      "id": "unknown",
+      "ground_truth": "dragon kite with wings and tail",
+      "pipeline_output": "Không thể phân tích ảnh.",
+      "baseline_output": "",
+      "pipeline_metrics": {
+        "BLEU-1": 0.0,
+        "BLEU-4": 0.0,
+        "ROUGE-L": 0.0,
+        "CIDEr": 0.0,
+        "Object_Acc": 0.0
+      },
+      "baseline_metrics": {
+        "BLEU-1": 0.0,
+        "BLEU-4": 0.0,
+        "ROUGE-L": 0.0,
+        "CIDEr": 0.0,
+        "Object_Acc": 0.0
+      },
+      "image_path": "c:\\Downloads\\ud\\VG_100K\\61548.jpg"
+    },
+    {
+      "id": "unknown",
+      "ground_truth": "Two white clock faces",
+      "pipeline_output": "Không thể phân tích ảnh.",
+      "baseline_output": "",
+      "pipeline_metrics": {
+        "BLEU-1": 0.0,
+        "BLEU-4": 0.0,
+        "ROUGE-L": 0.0,
+        "CIDEr": 0.0,
+        "Object_Acc": 0.0
+      },
+      "baseline_metrics": {
+        "BLEU-1": 0.0,
+        "BLEU-4": 0.0,
+        "ROUGE-L": 0.0,
+        "CIDEr": 0.0,
+        "Object_Acc": 0.0
+      },
+      "image_path": "c:\\Downloads\\ud\\VG_100K\\47.jpg"
+    },
+    {
+      "id": "unknown",
+      "ground_truth": "A black counter top.",
+      "pipeline_output": "Không thể phân tích ảnh.",
+      "baseline_output": "",
+      "pipeline_metrics": {
+        "BLEU-1": 0.0,
+        "BLEU-4": 0.0,
+        "ROUGE-L": 0.0,
+        "CIDEr": 0.0,
+        "Object_Acc": 0.0
+      },
+      "baseline_metrics": {
+        "BLEU-1": 0.0,
+        "BLEU-4": 0.0,
+        "ROUGE-L": 0.0,
+        "CIDEr": 0.0,
+        "Object_Acc": 0.0
+      },
+      "image_path": "c:\\Downloads\\ud\\VG_100K\\6.jpg"
+    },
+    {
+      "id": "unknown",
+      "ground_truth": "Post-it note under keyboard",
+      "pipeline_output": "Không thể phân tích ảnh.",
+      "baseline_output": "",
+      "pipeline_metrics": {
+        "BLEU-1": 0.0,
+        "BLEU-4": 0.0,
+        "ROUGE-L": 0.0,
+        "CIDEr": 0.0,
+        "Object_Acc": 0.0
+      },
+      "baseline_metrics": {
+        "BLEU-1": 0.0,
+        "BLEU-4": 0.0,
+        "ROUGE-L": 0.0,
+        "CIDEr": 0.0,
+        "Object_Acc": 0.0
+      },
+      "image_path": "c:\\Downloads\\ud\\VG_100K\\13.jpg"
+    },
+    {
+      "id": "unknown",
+      "ground_truth": "round three dimensional sign",
+      "pipeline_output": "Không thể phân tích ảnh.",
+      "baseline_output": "",
+      "pipeline_metrics": {
+        "BLEU-1": 0.0,
+        "BLEU-4": 0.0,
+        "ROUGE-L": 0.0,
+        "CIDEr": 0.0,
+        "Object_Acc": 0.0
+      },
+      "baseline_metrics": {
+        "BLEU-1": 0.0,
+        "BLEU-4": 0.0,
+        "ROUGE-L": 0.0,
+        "CIDEr": 0.0,
+        "Object_Acc": 0.0
+      },
+      "image_path": "c:\\Downloads\\ud\\VG_100K\\61557.jpg"
+    },
+    {
+      "id": "unknown",
+      "ground_truth": "a man looks through a camera's lens",
+      "pipeline_output": "Không thể phân tích ảnh.",
+      "baseline_output": "",
+      "pipeline_metrics": {
+        "BLEU-1": 0.0,
+        "BLEU-4": 0.0,
+        "ROUGE-L": 0.0,
+        "CIDEr": 0.0,
+        "Object_Acc": 0.0
+      },
+      "baseline_metrics": {
+        "BLEU-1": 0.0,
+        "BLEU-4": 0.0,
+        "ROUGE-L": 0.0,
+        "CIDEr": 0.0,
+        "Object_Acc": 0.0
+      },
+      "image_path": "c:\\Downloads\\ud\\VG_100K\\61554.jpg"
+    },
+    {
+      "id": "unknown",
+      "ground_truth": "glass window in the building",
+      "pipeline_output": "Không thể phân tích ảnh.",
+      "baseline_output": "",
+      "pipeline_metrics": {
+        "BLEU-1": 0.0,
+        "BLEU-4": 0.0,
+        "ROUGE-L": 0.0,
+        "CIDEr": 0.0,
+        "Object_Acc": 0.0
+      },
+      "baseline_metrics": {
+        "BLEU-1": 0.0,
+        "BLEU-4": 0.0,
+        "ROUGE-L": 0.0,
+        "CIDEr": 0.0,
+        "Object_Acc": 0.0
+      },
+      "image_path": "c:\\Downloads\\ud\\VG_100K\\61580.jpg"
+    },
+    {
+      "id": "unknown",
+      "ground_truth": "Ear of a rabbit",
+      "pipeline_output": "Không thể phân tích ảnh.",
+      "baseline_output": "",
+      "pipeline_metrics": {
+        "BLEU-1": 0.0,
+        "BLEU-4": 0.0,
+        "ROUGE-L": 0.0,
+        "CIDEr": 0.0,
+        "Object_Acc": 0.0
+      },
+      "baseline_metrics": {
+        "BLEU-1": 0.0,
+        "BLEU-4": 0.0,
+        "ROUGE-L": 0.0,
+        "CIDEr": 0.0,
+        "Object_Acc": 0.0
+      },
+      "image_path": "c:\\Downloads\\ud\\VG_100K\\61596.jpg"
+    },
+    {
+      "id": "unknown",
+      "ground_truth": "cattle is laying in the snow",
+      "pipeline_output": "Không thể phân tích ảnh.",
+      "baseline_output": "",
+      "pipeline_metrics": {
+        "BLEU-1": 0.0,
+        "BLEU-4": 0.0,
+        "ROUGE-L": 0.0,
+        "CIDEr": 0.0,
+        "Object_Acc": 0.0
+      },
+      "baseline_metrics": {
+        "BLEU-1": 0.0,
+        "BLEU-4": 0.0,
+        "ROUGE-L": 0.0,
+        "CIDEr": 0.0,
+        "Object_Acc": 0.0
+      },
+      "image_path": "c:\\Downloads\\ud\\VG_100K\\61543.jpg"
+    },
+    {
+      "id": "unknown",
+      "ground_truth": "two men on horseback",
+      "pipeline_output": "Không thể phân tích ảnh.",
+      "baseline_output": "",
+      "pipeline_metrics": {
+        "BLEU-1": 0.0,
+        "BLEU-4": 0.0,
+        "ROUGE-L": 0.0,
+        "CIDEr": 0.0,
+        "Object_Acc": 0.0
+      },
+      "baseline_metrics": {
+        "BLEU-1": 0.0,
+        "BLEU-4": 0.0,
+        "ROUGE-L": 0.0,
+        "CIDEr": 0.0,
+        "Object_Acc": 0.0
+      },
+      "image_path": "c:\\Downloads\\ud\\VG_100K\\61513.jpg"
+    }
+  ],
+  "timestamp": "2026-03-15T18:35:24.393866"
+}
