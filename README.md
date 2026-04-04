@@ -232,7 +232,7 @@ This project is licensed under the MIT License - see [LICENSE](LICENSE) file.
 
 - **Author**: Khanh Chien Ngo
 - **Email**: khanhchien6@gmail.com
-- **GitHub**: [@KhanhChien](https://github.com/ChinhocIT)
+- **GitHub**: [@KhanhChien](https://github.com/khanhchien23)
 
 ## ⭐ Citation
 
