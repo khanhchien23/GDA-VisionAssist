@@ -176,7 +176,7 @@ pytest tests/test_models.py
 ```bash
 python scripts/train_decoder.py \
   --dataset coco_stuff \
-  --epochs 50 \
+  --epochs 15 \
   --batch-size 8 \
   --lr 1e-4
 ```
@@ -192,11 +192,9 @@ python scripts/train_adaptor.py \
 
 ## 📊 Performance
 
-| Model | GPU | FPS | Accuracy |
-|-------|-----|-----|----------|
-| Full System | RTX 3090 | ~2-3 | 85%+ |
-| Seg Decoder only | RTX 3090 | ~10 | 78% mIoU |
-| SAM 2 only | RTX 3090 | ~8 | 92% IoU |
+| Model | GPU | FPS |
+|-------|-----|-----|
+| Full System | RTX 4060 | ~8 |
 
 ## 🤝 Contributing
 
