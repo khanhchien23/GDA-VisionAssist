@@ -196,25 +196,6 @@ python scripts/train_adaptor.py \
 |-------|-----|-----|
 | Full System | RTX 4060 | ~8 |
 
-### Development Setup
-
-```bash
-# Install dev dependencies
-pip install -r requirements-dev.txt
-
-# Setup pre-commit hooks
-pre-commit install
-
-# Run linting
-black src/
-flake8 src/
-mypy src/
-```
-
-## 📄 License
-
-This project is licensed under the MIT License - see [LICENSE](LICENSE) file.
-
 ## 🙏 Acknowledgments
 
 - **Qwen2-VL**: Alibaba Cloud
