@@ -196,10 +196,6 @@ python scripts/train_adaptor.py \
 |-------|-----|-----|
 | Full System | RTX 4060 | ~8 |
 
-## 🤝 Contributing
-
-We welcome all contributions! Please read [CONTRIBUTING.md](CONTRIBUTING.md) for details.
-
 ### Development Setup
 
 ```bash
