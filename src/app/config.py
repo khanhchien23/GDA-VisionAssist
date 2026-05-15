@@ -10,7 +10,7 @@ class WebcamConfig:
     """Webcam settings"""
     width: int = 640
     height: int = 480
-    fps: int = 10
+    fps: int = 30
     device_id: int = 0
 
 
@@ -68,6 +68,8 @@ class KeyBindings:
     SPACE: int = ord(' ')
     ENTER: int = 13
     VOICE_KEY: str = 'c'
+    OCR: int = ord('r')           # R → Đọc chữ trên vật thể
+    SCENE: int = ord('w')         # W → Mô tả toàn cảnh
 
 
 @dataclass
@@ -77,6 +79,7 @@ class InferenceConfig:
     voice_timeout: float = 4.0
     max_recording_time: float = 5.0
     min_audio_bytes: int = 500
+
 
 
 @dataclass

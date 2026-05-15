@@ -23,6 +23,7 @@ from .ui_renderer import UIRenderer
 from ..core.gda import GlobalDescriptionAcquisition
 from ..io import voice
 from ..io.keyboard import ClickHandler, KeyboardMonitor
+from ..constants import VOICE_CMD_OCR, VOICE_CMD_SCENE
 
 
 class GDAApplication:
@@ -86,9 +87,12 @@ class GDAApplication:
         # State
         self.current_mask: Optional[np.ndarray] = None
         self.last_result: Optional[dict] = None
+        self.last_frame_rgb: Optional[np.ndarray] = None   # Lưu frame cuối cho OCR
+        self.last_mask: Optional[np.ndarray] = None         # Lưu mask cuối cho OCR
         self.frame_count = 0
         self._running = False
         self.cap: Optional[cv2.VideoCapture] = None
+
     
     def run(self):
         """Main application loop"""
@@ -174,9 +178,9 @@ class GDAApplication:
             key = cv2.waitKey(1) & 0xFF
             self._handle_key(key, frame_rgb)
             
-            # Handle voice input
-            if self.current_mask is not None and self.stt_available:
-                if self.kb_monitor.c_pressed:
+            # Handle voice input (cho phép cả khi không có mask — cho Scene mode)
+            if self.stt_available and self.kb_monitor.c_pressed:
+                if self.current_mask is not None or self.last_mask is not None:
                     self._handle_voice_recording(frame_rgb)
             
             # Handle click segmentation
@@ -209,23 +213,87 @@ class GDAApplication:
             print("\n🎯 Chế độ chọn vùng - Click vào vật thể...")
         
         elif key == keys.ENTER and self.current_mask is not None:
-            self._submit_inference(frame_rgb, None)
+            # Dùng frame đã lưu lúc SAM segment (không dùng frame hiện tại vì camera có thể đã dịch chuyển)
+            seg_frame = getattr(self, '_segmented_frame', frame_rgb)
+            self._submit_inference(seg_frame, None)
+        
+        elif key == keys.OCR:  # R → OCR
+            self._handle_ocr(frame_rgb)
+        
+        elif key == keys.SCENE:  # W → Scene description
+            self._handle_scene(frame_rgb)
+
     
     def _submit_inference(self, frame_rgb: np.ndarray, 
-                          user_query: Optional[str]):
+                          user_query: Optional[str],
+                          task_type: str = 'describe'):
         """Submit inference task"""
         if self.inference_manager.is_processing():
             print("⚠️ Đang xử lý, vui lòng đợi...")
             return False
         
-        print("\n🚀 Đang mô tả (background)...")
+        type_labels = {
+            'describe': '🚀 Đang mô tả',
+            'ocr': '📖 Đang đọc chữ',
+            'scene': '🌍 Đang mô tả toàn cảnh'
+        }
+        print(f"\n{type_labels.get(task_type, '🚀')} (background)...")
         
-        if self.inference_manager.submit(frame_rgb, self.current_mask, user_query):
-            self.current_mask = None
+        mask = self.current_mask if task_type != 'scene' else None
+        
+        if self.inference_manager.submit(frame_rgb, mask, user_query, task_type=task_type):
+            # Lưu frame/mask cho OCR follow-up
+            self.last_frame_rgb = frame_rgb.copy()
+            if self.current_mask is not None:
+                self.last_mask = self.current_mask.copy()
+            
+            if task_type == 'describe':
+                self.current_mask = None
             return True
         else:
             print("⚠️ Queue đầy")
             return False
+    
+    def _handle_ocr(self, frame_rgb: np.ndarray):
+        """Handle OCR mode - đọc chữ trên vật thể đã chọn"""
+        # Dùng mask cuối cùng (đã lưu từ lần describe trước)
+        ocr_mask = self.current_mask if self.current_mask is not None else self.last_mask
+        ocr_frame = (getattr(self, '_segmented_frame', frame_rgb) 
+                     if self.current_mask is not None 
+                     else self.last_frame_rgb)
+        
+        if ocr_mask is None or ocr_frame is None:
+            print("\n⚠️ Chưa có vật thể được chọn. Hãy nhấn Space → Click để chọn vật trước.")
+            if self.tts_available:
+                voice.speech_queue.put("Chưa có vật thể. Hãy chọn vật thể trước.")
+            return
+        
+        # Tạm gán mask để _submit_inference lấy được
+        self.current_mask = ocr_mask
+        self._submit_inference(ocr_frame, None, task_type='ocr')
+    
+    def _handle_scene(self, frame_rgb: np.ndarray):
+        """Handle Scene Description mode - mô tả toàn cảnh"""
+        self._submit_inference(frame_rgb, None, task_type='scene')
+    
+    def _detect_voice_command(self, user_query: str) -> str:
+        """
+        Detect xem user nói lệnh OCR, Scene, hay câu hỏi thường.
+        
+        Returns:
+            'ocr', 'scene', or 'describe'
+        """
+        query_lower = user_query.lower().strip()
+        
+        for pattern in VOICE_CMD_OCR:
+            if pattern in query_lower:
+                return 'ocr'
+        
+        for pattern in VOICE_CMD_SCENE:
+            if pattern in query_lower:
+                return 'scene'
+        
+        return 'describe'
     
     def _handle_voice_recording(self, frame_rgb: np.ndarray):
         """Handle voice recording when C is pressed"""
@@ -233,7 +301,9 @@ class GDAApplication:
         
         print("\n🎤 GHI ÂM - THẢ C ĐỂ DỪNG...")
         
-        saved_mask = self.current_mask.copy()
+        saved_mask = (self.current_mask.copy() if self.current_mask is not None 
+                      else self.last_mask.copy() if self.last_mask is not None 
+                      else None)
         saved_frame_rgb = frame_rgb.copy()
         
         audio_data = None
@@ -342,15 +412,29 @@ class GDAApplication:
         
         # Submit if we got a query
         if user_query:
-            print(f"📤 Đang gửi câu hỏi...")
-            if not self.inference_manager.is_processing():
-                if self.inference_manager.submit(saved_frame_rgb, saved_mask, user_query):
-                    self.current_mask = None
-                    print("✅ Đã gửi - đang xử lý...")
-                else:
-                    print("⚠️ Queue đầy")
+            # Detect voice command type
+            cmd_type = self._detect_voice_command(user_query)
+            
+            if cmd_type == 'ocr':
+                print(f"📖 Lệnh OCR nhận được: \"{user_query}\"")
+                self._handle_ocr(saved_frame_rgb)
+            elif cmd_type == 'scene':
+                print(f"🌍 Lệnh Scene nhận được: \"{user_query}\"")
+                self._handle_scene(saved_frame_rgb)
             else:
-                print("⚠️ Hệ thống đang bận")
+                print(f"📤 Đang gửi câu hỏi: \"{user_query}\"")
+                if not self.inference_manager.is_processing():
+                    if self.inference_manager.submit(
+                        saved_frame_rgb, saved_mask, user_query, task_type='describe'
+                    ):
+                        self.last_frame_rgb = saved_frame_rgb.copy()
+                        self.last_mask = saved_mask.copy()
+                        self.current_mask = None
+                        print("✅ Đã gửi - đang xử lý...")
+                    else:
+                        print("⚠️ Queue đầy")
+                else:
+                    print("⚠️ Hệ thống đang bận")
         else:
             print("💡 Không có câu hỏi - mask vẫn còn")
             self.current_mask = saved_mask
@@ -409,15 +493,19 @@ class GDAApplication:
         
         print("🔍 Đang phân đoạn với SAM 2...")
         
+        t_sam_start = time.time()
         point = self.click_handler.clicked_point
         mask = self.gda.sam_segmenter.segment_from_point(
             frame_rgb, point, use_iterative=False
         )
+        sam_elapsed = time.time() - t_sam_start
         
-        print(" ✓")
+        print(f" ✓ (SAM 2: {sam_elapsed:.3f}s)")
+        self._last_sam_time = sam_elapsed
         
         if mask is not None and mask.sum() > 0:
             self.current_mask = mask
+            self._segmented_frame = frame_rgb.copy()  # 🔒 Lưu frame đúng lúc SAM segment
             area_pixels = mask.sum()
             area_percent = (area_pixels / (mask.shape[0] * mask.shape[1])) * 100
             print(f"✅ Vùng: {area_pixels} px ({area_percent:.1f}%)")
@@ -436,7 +524,11 @@ class GDAApplication:
             self.last_result = result
             
             print("\n" + "─"*70)
-            print("📊 KẾT QUẢ:")
+            
+            task_type = result.get('task_type', 'describe')
+            type_icons = {'describe': '📊', 'ocr': '📖', 'scene': '🌍'}
+            type_names = {'describe': 'KẾT QUẢ', 'ocr': 'KẾT QUẢ OCR', 'scene': 'KẾT QUẢ TOÀN CẢNH'}
+            print(f"{type_icons.get(task_type, '📊')} {type_names.get(task_type, 'KẾT QUẢ')}:")
             
             if result.get('predicted_class'):
                 conf = result.get('confidence', 0)
@@ -448,6 +540,50 @@ class GDAApplication:
             latency = result.get('latency_sec')
             if latency is not None:
                 print(f"  ⏱️ Thời gian phản hồi: {latency:.2f} giây")
+            
+            # ⏱️ Hiển thị thời gian SAM 2 segmentation
+            sam_time = getattr(self, '_last_sam_time', None)
+            if sam_time is not None:
+                print(f"  ⏱️ SAM 2 Segmentation: {sam_time:.3f} giây")
+            
+            # ⏱️ Hiển thị thời gian từng bước chi tiết
+            step_timings = result.get('step_timings', {})
+            if step_timings:
+                print(f"\n  {'─'*55}")
+                print(f"  ⏱️  THỜI GIAN XỬ LÝ PIPELINE:")
+                
+                # Thêm SAM timing vào đầu
+                if sam_time is not None:
+                    step_timings_display = {'0_sam_segment': sam_time}
+                    step_timings_display.update(step_timings)
+                else:
+                    step_timings_display = step_timings
+                
+                total = step_timings.get('total', latency or 0)
+                total_with_sam = total + (sam_time or 0)
+                
+                step_labels = {
+                    '0_sam_segment': '🎯 SAM 2 Phân đoạn',
+                    '1_vit_extract': '🔍 ViT Feature Extraction',
+                    '2_setr_classify': '🏷️  SETR Classification (DINOv2)',
+                    '3_adaptor': '🔗 Masked Features + Adaptor',
+                    '4_image_preprocess': '🖼️  Image Preprocessing',
+                    '5_text_decoder': '📝 TextDecoder',
+                    '6_llm_generate': '🤖 Qwen2-VL Generation',
+                    '7_postprocess': '✂️  Post-processing',
+                }
+                
+                for key, label in step_labels.items():
+                    if key in step_timings_display:
+                        val = step_timings_display[key]
+                        pct = (val / total_with_sam * 100) if total_with_sam > 0 else 0
+                        bar_len = int(min(pct / 100 * 20, 20))
+                        bar = '█' * bar_len + '░' * (20 - bar_len)
+                        print(f"    {label:40s} {val:6.3f}s ({pct:4.1f}%)  {bar}")
+                
+                print(f"    {'─'*60}")
+                print(f"    {'🏁 TỔNG (SAM + Inference)':40s} {total_with_sam:6.3f}s")
+                print(f"  {'─'*55}")
             
             if self.debug:
                 if result.get('vit_features_shape'):
@@ -461,7 +597,9 @@ class GDAApplication:
             if self.tts_available and not result.get('error'):
                 desc = result.get('description')
                 if desc:
+                    t_tts_start = time.time()
                     voice.speech_queue.put(desc)
+                    print(f"  🔊 TTS queued (submit: {time.time() - t_tts_start:.3f}s)")
     
     def _periodic_cleanup(self):
         """Periodic memory cleanup"""
@@ -474,7 +612,7 @@ class GDAApplication:
     def _print_welcome(self):
         """Print welcome message"""
         print("\n" + "="*70)
-        print("🎬 HỆ THỐNG GDA - REFACTORED VERSION")
+        print("🎬 HỆ THỐNG GDA - VISION ASSIST")
         print("="*70)
         print("📋 Cách dùng:")
         print("  1. Nhấn SPACE → Kích hoạt chế độ chọn vùng")
@@ -482,14 +620,17 @@ class GDAApplication:
         print("  3. SAM 2 sẽ phân đoạn vật thể")
         print("  4. GIỮ 'C' và nói câu hỏi (hoặc Enter để mô tả tự động)")
         print("  5. THẢ 'C' để xử lý")
-        print("\n💡 Ví dụ câu hỏi:")
+        print("\n💡 Ví dụ câu hỏi / lệnh:")
         print("  ✓ 'Đây là gì?'")
         print("  ✓ 'Vật này màu gì?'")
-        print("  ✓ 'Mô tả vật này'")
+        print("  ✓ 'Đọc chữ'     → Đọc text trên vật thể (🆕)")
+        print("  ✓ 'Xung quanh có gì?' → Mô tả toàn cảnh (🆕)")
         print("\n🔑 Phím tắt:")
         print("  - Space: Chọn vùng")
         print("  - C + Voice: Hỏi câu hỏi")
         print("  - Enter: Mô tả tự động")
+        print("  - R: Đọc chữ trên vật thể (OCR) (🆕)")
+        print("  - W: Mô tả toàn cảnh (🆕)")
         print("  - S: Lưu ảnh")
         print("  - D: Toggle debug mode")
         print("  - Q: Thoát")

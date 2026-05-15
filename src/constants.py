@@ -26,3 +26,19 @@ COCO_STUFF_CLASSES = [
     'đá', 'đá cuội', 'sỏi', 'bùn', 'đường', 'vỉa hè', 'núi', 'đồi',
     'hòn đá', 'vách đá', 'bầu trời', 'mây', 'nước', 'sông', 'hồ', 'biển', 'đại dương'
 ]
+
+# ============================================================
+# VOICE COMMAND PATTERNS
+# ============================================================
+VOICE_CMD_OCR = [
+    'đọc chữ', 'đọc', 'read', 'ocr', 'doc chu',
+    'đọc text', 'chữ gì', 'viết gì', 'ghi gì',
+    'đọc giúp', 'đọc cho tôi'
+]
+
+VOICE_CMD_SCENE = [
+    'xung quanh', 'xung quanh có gì', 'mô tả cảnh', 
+    'scene', 'cảnh', 'toàn cảnh', 'quanh đây',
+    'có gì xung quanh', 'phía trước có gì',
+    'mô tả xung quanh', 'describe scene'
+]

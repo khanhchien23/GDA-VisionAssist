@@ -118,10 +118,9 @@ class PromptConstructor:
     Hãy mô tả VẬT THỂ TRONG VÙNG MÀU XANH:
     - Đó là gì?
     - Màu sắc chính?
-    - Hình dạng/đặc điểm nổi bật?
-    - Công dụng/chức năng chính của vật thể này là gì?
+    - Công dụng/chức năng chính?
 
-    Trả lời ngắn gọn 3-4 câu:"""
+    TRẢ LỜI TRỰC TIẾP, ngắn gọn 2-3 câu, không nhắc lại yêu cầu:"""
             
         else:
             # Câu hỏi cụ thể
@@ -129,6 +128,6 @@ class PromptConstructor:
 
     Vật thể trong vùng màu xanh nằm {location}.
 
-    HÃY TRẢ LỜI VỀ VẬT THỂ TRONG VÙNG MÀU XANH (2-3 câu):"""
+    TRẢ LỜI TRỰC TIẾP, KHÔNG nhắc lại câu hỏi (2-3 câu):"""
         
         return prompt

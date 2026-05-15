@@ -1,0 +1,52 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+*.egg
+dist/
+build/
+*.eggs/
+
+# Virtual environment
+venv/
+env/
+.venv/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Model checkpoints (too large for git)
+checkpoints/
+*.pth
+*.pt
+*.bin
+*.safetensors
+*.onnx
+
+# Logs & outputs
+*.log
+wandb/
+runs/
+outputs/
+
+# Data
+*.json
+!config/*.json
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Environment
+.env
+.env.local

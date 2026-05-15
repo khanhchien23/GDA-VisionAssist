@@ -204,7 +204,7 @@ class GlobalDescriptionAcquisition:
         else:
             print("   ⚠️  Using random weights (needs training)")
 
-        self.seg_decoder.train()
+        self.seg_decoder.eval()  # 🔧 FIX: Phải dùng eval mode khi inference!
         
         # ============================================================
         # 4. Vision-Language Adaptor + MaskedFeatureExtractor + TextDecoder
@@ -717,6 +717,7 @@ class GlobalDescriptionAcquisition:
         FIXED VERSION: Inject vision tokens into LLM generation
         """
         start_time = time.time()
+        step_timings = {}  # ⏱️ Thu thập thời gian từng bước
         print("🔄", end='', flush=True)
         
         # Initialize default values to avoid UnboundLocalError
@@ -726,33 +727,41 @@ class GlobalDescriptionAcquisition:
         
         try:
             # STEP 1: Extract ViT features
+            t_step = time.time()
             vit_features = self._extract_vit_features(image_rgb)
+            step_timings['1_vit_extract'] = time.time() - t_step
             
             if vit_features is None:
                 return {
                     'description': "Không thể phân tích ảnh.", 
                     'error': True, 
                     'predicted_class': None, 
-                    'confidence': 0.0
+                    'confidence': 0.0,
+                    'step_timings': step_timings
                 }
             
             print(".", end='', flush=True)
             
             # STEP 2: Predict class using DINOv2 → SETR
+            t_step = time.time()
             predicted_class, confidence = self.predict_class_from_region(
                 image_rgb, mask, image_rgb.shape[:2]  # Now uses DINOv2 internally
             )
+            step_timings['2_setr_classify'] = time.time() - t_step
             
             if predicted_class:
                 print(f"[{predicted_class}:{confidence:.0%}]", end='', flush=True)
             
             # STEP 3: Extract FOCUSED features → Vision Tokens
+            t_step = time.time()
             masked_features = self.masked_feature_extractor(vit_features, mask)
             vision_tokens = self.adaptor(masked_features)  # (B, 64, 1536)
+            step_timings['3_adaptor'] = time.time() - t_step
             
             print(".", end='', flush=True)
             
             # STEP 4: Construct prompt
+            t_step = time.time()
             text_prompt = self.prompt_constructor.construct_prompt(
                 mask, predicted_class, user_query
             )
@@ -870,11 +879,13 @@ class GlobalDescriptionAcquisition:
                 else:
                     pil_image = Image.fromarray(image_rgb)
                 
+                step_timings['4_image_preprocess'] = time.time() - t_step
                 print(".", end='', flush=True)
                 
                 # ============================================================
                 # 🔥 STEP 5.1: TEXT DECODER - Get object description from adaptor
                 # ============================================================
+                t_step = time.time()
                 adaptor_context = ""
                 
                 if self.text_decoder_trained:
@@ -894,6 +905,7 @@ class GlobalDescriptionAcquisition:
                     except Exception as td_err:
                         if self.debug:
                             print(f"\n⚠️ TextDecoder error: {td_err}")
+                step_timings['5_text_decoder'] = time.time() - t_step
                 
                 # ============================================================
                 # 🔥 IMPROVED PROMPTS - Include adaptor context + SETR class
@@ -911,17 +923,21 @@ class GlobalDescriptionAcquisition:
                 if user_query:
                     text_prompt = f"""{full_context}
 Ảnh này chỉ chứa MỘT vật thể duy nhất trên nền trắng, được viền đỏ.
-Hãy nhìn kỹ vật thể đó và trả lời câu hỏi bằng tiếng Việt:
-{user_query}
-Ngoài ra, hãy cho biết công dụng/chức năng chính của vật thể này."""
+Câu hỏi: {user_query}
+
+Quy tắc trả lời:
+- TRẢ LỜI TRỰC TIẾP, KHÔNG nhắc lại câu hỏi.
+- Không bắt đầu bằng "Câu hỏi là..." hay "Bạn hỏi...".
+- Trả lời ngắn gọn 2-3 câu bằng tiếng Việt.
+- Nêu công dụng/chức năng chính nếu phù hợp."""
                 else:
                     text_prompt = f"""{full_context}
 Ảnh này chỉ chứa MỘT vật thể duy nhất trên nền trắng, được viền đỏ.
-Hãy mô tả chi tiết vật thể này bằng tiếng Việt:
+Hãy mô tả vật thể này bằng tiếng Việt, TRẢ LỜI TRỰC TIẾP:
 - Đây là gì?
 - Màu sắc và hình dạng?
-- Đặc điểm nổi bật?
-- Công dụng/chức năng chính của vật thể này là gì?"""
+- Công dụng/chức năng chính?
+Trả lời ngắn gọn 2-3 câu, không lặp lại yêu cầu."""
                 
                 # ========================================================
                 # CREATE AND PROCESS INPUT
@@ -959,14 +975,15 @@ Hãy mô tả chi tiết vật thể này bằng tiếng Việt:
                 # Vision token injection doesn't work with Qwen2-VL
                 # Going straight to native generation with pixel_values
                 
+                t_step = time.time()
                 generated_ids_trimmed = None
                 
                 try:
                     gen_kwargs = {
                         'input_ids': inputs['input_ids'],
                         'attention_mask': inputs.get('attention_mask'),
-                        'max_new_tokens': 150,  # More tokens for detailed description
-                        'min_new_tokens': 15,   # Ensure substantial output
+                        'max_new_tokens': 100,  # Đủ chỗ để hoàn thành câu, sẽ cắt ở post-process
+                        'min_new_tokens': 10,   # Ensure substantial output
                         'temperature': 0.4,     # 🔥 Lower for accurate descriptions
                         'top_p': 0.85,
                         'top_k': 30,
@@ -994,10 +1011,12 @@ Hãy mô tả chi tiết vật thể này bằng tiếng Việt:
                     if self.debug:
                         print(f"❌ Generation failed: {gen_error}")
                     generated_ids_trimmed = None
+                step_timings['6_llm_generate'] = time.time() - t_step
                 
                 # ========================================================
                 # DECODE OUTPUT - ROBUST VERSION
                 # ========================================================
+                t_step = time.time()
                 if generated_ids_trimmed is not None and generated_ids_trimmed.numel() > 0:
                     try:
                         import re
@@ -1042,6 +1061,29 @@ Hãy mô tả chi tiết vật thể này bằng tiếng Việt:
                         # Clean up multiple spaces after removal
                         description = re.sub(r'\s+', ' ', description).strip()
                         
+                        # ✅ STEP 2.5: Cắt tại câu hoàn chỉnh cuối cùng
+                        # Tránh nói dở giữa câu khi TTS đọc
+                        if description and len(description) > 10:
+                            # Tìm vị trí kết thúc câu cuối cùng (. ! ? hoặc xuống dòng)
+                            sentence_ends = []
+                            for m in re.finditer(r'[.!?。](?:\s|$)', description):
+                                sentence_ends.append(m.end())
+                            
+                            if sentence_ends:
+                                # Cắt tại dấu câu cuối cùng
+                                last_end = sentence_ends[-1]
+                                description = description[:last_end].strip()
+                            else:
+                                # Không có dấu câu → cắt tại dấu phẩy hoặc từ cuối cùng
+                                last_comma = description.rfind(',')
+                                last_dash = description.rfind(' -')
+                                cut_pos = max(last_comma, last_dash)
+                                if cut_pos > len(description) * 0.5:
+                                    description = description[:cut_pos].strip() + '.'
+                                # Nếu không tìm thấy điểm cắt tốt → giữ nguyên + thêm dấu chấm
+                                elif not description.endswith(('.', '!', '?')):
+                                    description = description.rstrip(',;: ') + '.'
+                        
                         # ✅ STEP 3: Validate and use smart fallback
                         if description and len(description) >= 3:
                             # Success - use the description
@@ -1073,9 +1115,9 @@ Hãy mô tả chi tiết vật thể này bằng tiếng Việt:
                     
                     try:
                         # Fallback 1: Simple direct generation with image - VIETNAMESE ONLY
-                        simple_prompt = "Nhìn vào vùng xanh lá trong ảnh. Mô tả ngắn gọn vật thể này bằng tiếng Việt thuần túy."
+                        simple_prompt = "Nhìn vào vùng xanh lá trong ảnh. Mô tả ngắn gọn vật thể này bằng tiếng Việt thuần túy. Trả lời trực tiếp, không nhắc lại yêu cầu."
                         if user_query:
-                            simple_prompt = f"Nhìn vào vùng xanh lá trong ảnh. Trả lời bằng tiếng Việt thuần túy: {user_query}"
+                            simple_prompt = f"Nhìn vào vùng xanh lá trong ảnh. Trả lời trực tiếp bằng tiếng Việt, KHÔNG nhắc lại câu hỏi: {user_query}"
                         
                         fallback_messages = [
                             {
@@ -1155,7 +1197,30 @@ Hãy mô tả chi tiết vật thể này bằng tiếng Việt:
                         else:
                             description = "Đã nhận diện được vật thể nhưng chưa thể mô tả chi tiết. Vui lòng thử lại."
 
+                step_timings['7_postprocess'] = time.time() - t_step
                 elapsed = time.time() - start_time
+                step_timings['total'] = elapsed
+                
+                # ⏱️ In thời gian từng bước
+                print(f"\n{'─'*50}")
+                print(f"⏱️  THỜI GIAN XỬ LÝ TỪNG BƯỚC:")
+                step_labels = {
+                    '1_vit_extract': '① ViT Feature Extraction',
+                    '2_setr_classify': '② SETR Classification (DINOv2)',
+                    '3_adaptor': '③ Masked Features + Adaptor',
+                    '4_image_preprocess': '④ Image Preprocessing',
+                    '5_text_decoder': '⑤ TextDecoder',
+                    '6_llm_generate': '⑥ Qwen2-VL Generation',
+                    '7_postprocess': '⑦ Post-processing',
+                    'total': '🏁 TỔNG CỘNG'
+                }
+                for key, label in step_labels.items():
+                    if key in step_timings:
+                        val = step_timings[key]
+                        bar_len = int(min(val / max(elapsed, 0.001) * 30, 30))
+                        bar = '█' * bar_len + '░' * (30 - bar_len)
+                        print(f"  {label:40s} {val:6.3f}s  {bar}")
+                print(f"{'─'*50}")
                 print(f" ✓ ({elapsed:.1f}s)")
                 
             except Exception as generation_error:
@@ -1190,7 +1255,8 @@ Hãy mô tả chi tiết vật thể này bằng tiếng Việt:
                 'error': False,
                 'vit_features_shape': vit_features.shape if self.debug else None,
                 'vision_tokens_shape': vision_tokens.shape if self.debug else None,
-                'used_vision_tokens': True
+                'used_vision_tokens': True,
+                'step_timings': step_timings
             }
             
         except Exception as e:
@@ -1208,7 +1274,8 @@ Hãy mô tả chi tiết vật thể này bằng tiếng Việt:
                 'predicted_class': predicted_class,
                 'confidence': confidence,
                 'error': True,
-                'used_vision_tokens': False
+                'used_vision_tokens': False,
+                'step_timings': step_timings
             }
         
     def _initialize_vision_projection(self):
@@ -1219,3 +1286,363 @@ Hãy mô tả chi tiết vật thể này bằng tiếng Việt:
         if not hasattr(self, 'vision_to_llm_proj'):
             self.vision_to_llm_proj = None  # Will be created on first use
             print("   Vision to LLM projection will be created dynamically")
+    
+    # ================================================================
+    # OCR MODE - Đọc chữ trên vật thể
+    # ================================================================
+    @torch.inference_mode()
+    def ocr_region(self, image_rgb: np.ndarray, mask: np.ndarray) -> dict:
+        """
+        Đọc chữ/text trên vùng mask bằng Qwen2-VL OCR.
+        
+        Args:
+            image_rgb: (H, W, 3) numpy array
+            mask: (H, W) binary mask từ SAM 2
+            
+        Returns:
+            dict với 'text', 'has_text', 'error'
+        """
+        start_time = time.time()
+        step_timings = {}
+        
+        print("\n📖 OCR: Đang đọc chữ...", end='', flush=True)
+        
+        try:
+            from PIL import Image, ImageEnhance
+            
+            # STEP 1: Crop vùng mask
+            t_step = time.time()
+            y_coords, x_coords = np.where(mask > 0)
+            
+            if len(y_coords) == 0:
+                return {
+                    'text': 'Không có vùng được chọn.',
+                    'has_text': False,
+                    'error': True,
+                    'task_type': 'ocr',
+                    'step_timings': {}
+                }
+            
+            h_img, w_img = image_rgb.shape[:2]
+            x_min, x_max = x_coords.min(), x_coords.max()
+            y_min, y_max = y_coords.min(), y_coords.max()
+            
+            # Margin nhỏ cho OCR (cần thấy rõ text)
+            margin = 20
+            x_min_crop = max(0, x_min - margin)
+            x_max_crop = min(w_img - 1, x_max + margin)
+            y_min_crop = max(0, y_min - margin)
+            y_max_crop = min(h_img - 1, y_max + margin)
+            
+            cropped = image_rgb[y_min_crop:y_max_crop, x_min_crop:x_max_crop]
+            
+            if cropped.size == 0 or cropped.shape[0] < 2 or cropped.shape[1] < 2:
+                return {
+                    'text': 'Vùng cắt quá nhỏ.',
+                    'has_text': False,
+                    'error': True,
+                    'task_type': 'ocr',
+                    'step_timings': {}
+                }
+            
+            pil_image = Image.fromarray(cropped)
+            
+            # Tăng contrast/sharpness cho OCR
+            pil_image = ImageEnhance.Contrast(pil_image).enhance(1.3)
+            pil_image = ImageEnhance.Sharpness(pil_image).enhance(1.5)
+            
+            # Resize nếu quá nhỏ
+            min_size = 256
+            if pil_image.width < min_size or pil_image.height < min_size:
+                scale = max(min_size / pil_image.width, min_size / pil_image.height)
+                new_size = (int(pil_image.width * scale), int(pil_image.height * scale))
+                pil_image = pil_image.resize(new_size, Image.Resampling.LANCZOS)
+            
+            step_timings['1_crop_preprocess'] = time.time() - t_step
+            print(".", end='', flush=True)
+            
+            # STEP 2: Qwen2-VL OCR
+            t_step = time.time()
+            
+            ocr_prompt = """Hãy đọc TẤT CẢ chữ/văn bản/số có trong ảnh này.
+Nếu có chữ, hãy ghi lại chính xác nội dung.
+Nếu KHÔNG có chữ nào, hãy trả lời chính xác: "Không có chữ trên vật thể này."
+Chỉ đọc chữ, không mô tả ảnh."""
+            
+            messages = [
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "image", "image": pil_image},
+                        {"type": "text", "text": ocr_prompt}
+                    ]
+                }
+            ]
+            
+            text_input = self.processor.apply_chat_template(
+                messages, tokenize=False, add_generation_prompt=True
+            )
+            
+            inputs = self.processor(
+                text=[text_input],
+                images=[pil_image],
+                return_tensors="pt",
+                padding=True
+            ).to(self.device)
+            
+            gen_kwargs = {
+                'input_ids': inputs['input_ids'],
+                'attention_mask': inputs.get('attention_mask'),
+                'max_new_tokens': 150,
+                'temperature': 0.1,  # Rất thấp để OCR chính xác
+                'top_p': 0.9,
+                'do_sample': True,
+                'repetition_penalty': 1.1,
+                'pad_token_id': self.tokenizer.pad_token_id,
+                'eos_token_id': self.tokenizer.eos_token_id,
+            }
+            
+            if 'pixel_values' in inputs:
+                gen_kwargs['pixel_values'] = inputs['pixel_values']
+            if 'image_grid_thw' in inputs:
+                gen_kwargs['image_grid_thw'] = inputs['image_grid_thw']
+            
+            generated_ids = self.full_model.generate(**gen_kwargs)
+            input_len = inputs['input_ids'].shape[1]
+            output_ids = generated_ids[:, input_len:]
+            
+            ocr_text = self.tokenizer.decode(
+                output_ids[0],
+                skip_special_tokens=True,
+                clean_up_tokenization_spaces=True
+            ).strip()
+            
+            step_timings['2_qwen_ocr'] = time.time() - t_step
+            print(".", end='', flush=True)
+            
+            # STEP 3: Xử lý kết quả
+            t_step = time.time()
+            import re
+            
+            # Lọc CJK
+            cjk_pattern = r'[\u4e00-\u9fff\u3400-\u4dbf\u3040-\u309f\u30a0-\u30ff\uac00-\ud7af]+'
+            ocr_text = re.sub(cjk_pattern, '', ocr_text).strip()
+            ocr_text = re.sub(r'\s+', ' ', ocr_text).strip()
+            
+            # Detect "không có chữ"
+            no_text_patterns = [
+                'không có chữ', 'không có văn bản', 'không có text',
+                'no text', 'không tìm thấy', 'không có ký tự',
+                'không có nội dung'
+            ]
+            
+            has_text = True
+            for pattern in no_text_patterns:
+                if pattern in ocr_text.lower():
+                    has_text = False
+                    ocr_text = "Không có chữ trên vật thể này."
+                    break
+            
+            if not ocr_text or len(ocr_text) < 2:
+                has_text = False
+                ocr_text = "Không có chữ trên vật thể này."
+            
+            step_timings['3_postprocess'] = time.time() - t_step
+            
+            elapsed = time.time() - start_time
+            step_timings['total'] = elapsed
+            
+            status = "✅" if has_text else "ℹ️"
+            print(f" {status} ({elapsed:.1f}s)")
+            
+            if has_text:
+                print(f"   📖 Nội dung: \"{ocr_text}\"")
+            
+            # Cleanup
+            del inputs, generated_ids
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
+            
+            return {
+                'description': f"📖 {ocr_text}" if has_text else ocr_text,
+                'text': ocr_text,
+                'has_text': has_text,
+                'error': False,
+                'task_type': 'ocr',
+                'step_timings': step_timings
+            }
+            
+        except Exception as e:
+            print(f" ❌ {e}")
+            if self.debug:
+                import traceback
+                traceback.print_exc()
+            
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
+            
+            return {
+                'description': f"Lỗi OCR: {str(e)}",
+                'text': '',
+                'has_text': False,
+                'error': True,
+                'task_type': 'ocr',
+                'step_timings': {}
+            }
+    
+    # ================================================================
+    # SCENE DESCRIPTION MODE - Mô tả toàn cảnh
+    # ================================================================
+    @torch.inference_mode()
+    def describe_scene(self, image_rgb: np.ndarray) -> dict:
+        """
+        Mô tả toàn cảnh — gửi full image cho Qwen2-VL.
+        KHÔNG dùng SAM 2, SETR, Adaptor → nhanh hơn pipeline chính.
+        
+        Args:
+            image_rgb: (H, W, 3) numpy array
+            
+        Returns:
+            dict với 'description', 'error'
+        """
+        start_time = time.time()
+        step_timings = {}
+        
+        print("\n🌍 SCENE: Đang mô tả toàn cảnh...", end='', flush=True)
+        
+        try:
+            from PIL import Image
+            
+            # STEP 1: Prepare image
+            t_step = time.time()
+            pil_image = Image.fromarray(image_rgb)
+            
+            # Resize nếu quá lớn (tiết kiệm VRAM)
+            max_dim = 640
+            if pil_image.width > max_dim or pil_image.height > max_dim:
+                ratio = min(max_dim / pil_image.width, max_dim / pil_image.height)
+                new_size = (int(pil_image.width * ratio), int(pil_image.height * ratio))
+                pil_image = pil_image.resize(new_size, Image.Resampling.LANCZOS)
+            
+            step_timings['1_preprocess'] = time.time() - t_step
+            print(".", end='', flush=True)
+            
+            # STEP 2: Qwen2-VL generation
+            t_step = time.time()
+            
+            scene_prompt = """Bạn là trợ lý cho người khiếm thị. Hãy mô tả cảnh xung quanh bằng tiếng Việt:
+- Phía trước có gì?
+- Bên trái và bên phải có gì?
+- Có vật cản hay nguy hiểm gì không?
+- Mô tả ngắn gọn, dễ hiểu, tập trung vào thông tin hữu ích cho việc di chuyển.
+Trả lời 3-5 câu:"""
+            
+            messages = [
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "image", "image": pil_image},
+                        {"type": "text", "text": scene_prompt}
+                    ]
+                }
+            ]
+            
+            text_input = self.processor.apply_chat_template(
+                messages, tokenize=False, add_generation_prompt=True
+            )
+            
+            inputs = self.processor(
+                text=[text_input],
+                images=[pil_image],
+                return_tensors="pt",
+                padding=True
+            ).to(self.device)
+            
+            gen_kwargs = {
+                'input_ids': inputs['input_ids'],
+                'attention_mask': inputs.get('attention_mask'),
+                'max_new_tokens': 150,
+                'temperature': 0.5,
+                'top_p': 0.9,
+                'do_sample': True,
+                'repetition_penalty': 1.15,
+                'no_repeat_ngram_size': 3,
+                'pad_token_id': self.tokenizer.pad_token_id,
+                'eos_token_id': self.tokenizer.eos_token_id,
+            }
+            
+            if 'pixel_values' in inputs:
+                gen_kwargs['pixel_values'] = inputs['pixel_values']
+            if 'image_grid_thw' in inputs:
+                gen_kwargs['image_grid_thw'] = inputs['image_grid_thw']
+            
+            generated_ids = self.full_model.generate(**gen_kwargs)
+            input_len = inputs['input_ids'].shape[1]
+            output_ids = generated_ids[:, input_len:]
+            
+            description = self.tokenizer.decode(
+                output_ids[0],
+                skip_special_tokens=True,
+                clean_up_tokenization_spaces=True
+            ).strip()
+            
+            step_timings['2_qwen_generate'] = time.time() - t_step
+            print(".", end='', flush=True)
+            
+            # STEP 3: Post-process
+            t_step = time.time()
+            import re
+            
+            # Lọc CJK
+            cjk_pattern = r'[\u4e00-\u9fff\u3400-\u4dbf\u3040-\u309f\u30a0-\u30ff\uac00-\ud7af]+'
+            description = re.sub(cjk_pattern, '', description).strip()
+            description = re.sub(r'\s+', ' ', description).strip()
+            
+            # Cắt tại câu cuối
+            if description and len(description) > 10:
+                sentence_ends = []
+                for m in re.finditer(r'[.!?。](?:\s|$)', description):
+                    sentence_ends.append(m.end())
+                if sentence_ends:
+                    description = description[:sentence_ends[-1]].strip()
+                elif not description.endswith(('.', '!', '?')):
+                    description = description.rstrip(',;: ') + '.'
+            
+            if not description or len(description) < 5:
+                description = "Không thể mô tả cảnh. Vui lòng thử lại."
+            
+            step_timings['3_postprocess'] = time.time() - t_step
+            
+            elapsed = time.time() - start_time
+            step_timings['total'] = elapsed
+            
+            print(f" ✅ ({elapsed:.1f}s)")
+            print(f"   🌍 {description}")
+            
+            # Cleanup
+            del inputs, generated_ids
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
+            
+            return {
+                'description': description,
+                'error': False,
+                'task_type': 'scene',
+                'step_timings': step_timings
+            }
+            
+        except Exception as e:
+            print(f" ❌ {e}")
+            if self.debug:
+                import traceback
+                traceback.print_exc()
+            
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
+            
+            return {
+                'description': f"Lỗi mô tả cảnh: {str(e)}",
+                'error': True,
+                'task_type': 'scene',
+                'step_timings': {}
+            }

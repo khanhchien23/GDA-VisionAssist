@@ -2,129 +2,159 @@
 
 [![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
-**VISION-LANGUAGE SYSTEM FOR ASSISTING VISUALLY IMPAIRED INDIVIDUALS IN OBJECT RECOGNITION AND DESCRIPTION QUERY.**
+**Vision-Language system for assisting visually impaired individuals in object recognition and description.**
 
-## ✨ Features
+---
 
-- 🎯 **Precise object segmentation** with SAM 2 (Segment Anything Model)
-- 🧠 **Vision-Language understanding** with Qwen2-VL
-- 🗣️ **Voice interaction** (Vietnamese + English)
-- ⚡ **Real-time inference** on webcam
-- 🎨 **Semantic segmentation** with SETR decoder (COCO-Stuff 171 classes)
-- 🔧 **Modular architecture** for easy extension
+## ✨ Key Features
+
+- 🎯 **SAM 2** — click-based object segmentation
+- 🦖 **DINOv2 + SETR** — semantic segmentation (COCO-Stuff 171 classes)
+- 🧠 **Qwen2-VL-2B** — vision-language understanding (8-bit quantized)
+- 🌉 **Vision-Language Adaptor** — bridges visual features to language space (64 query tokens)
+- 📝 **Vision Text Decoder** — generates contextual descriptions from masked features
+- 🗣️ **Voice interaction** — hold `M` to speak, auto-answer on release (Vietnamese + English)
+- 🔊 **TTS** — reads results aloud via edge-tts (`vi-VN-HoaiMyNeural`)
+- 📖 **OCR** — reads text within segmented regions
+- ⚡ **Real-time** — Desktop app (OpenCV) & Web UI (FastAPI + WebRTC)
+
+---
 
 ## 🏗️ Architecture
 
 ```
-Input Image → ViT Encoder → [Seg Decoder + Adaptor] → Vision Tokens → LLM → Answer
-                  ↓
-              SAM 2 Mask
+                    ┌─────────────┐
+                    │ Input Image │
+                    └──────┬──────┘
+                           │
+         ┌─────────────────┼─────────────────┐
+         │                 │                  │
+         ▼                 ▼                  ▼
+  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐
+  │ DINOv2 ViT-B │  │ Qwen2-VL ViT │  │    SAM 2     │
+  │  (frozen)    │  │  (frozen)    │  │ (click→mask) │
+  └──────┬───────┘  └──────┬───────┘  └──────────────┘
+         │                 │
+         ▼                 ▼
+  ┌──────────────┐  ┌──────────────┐
+  │ SETR Decoder │  │   Adaptor    │
+  │ (172 classes)│  │ (64 queries) │
+  └──────┬───────┘  └──────┬───────┘
+         │                 │
+         └────────┬────────┘
+                  ▼
+       ┌────────────────────┐
+       │ Prompt Constructor │
+       │ (spatial+semantic) │
+       └─────────┬──────────┘
+                 ▼
+       ┌────────────────────┐
+       │   Qwen2-VL LLM    │
+       │  (8-bit quantized) │
+       └─────────┬──────────┘
+                 ▼
+          ┌────────────┐
+          │  TTS / OCR │
+          └────────────┘
 ```
 
-### Main Components:
+| #   | Component                   | Role                                                      |
+| --- | --------------------------- | --------------------------------------------------------- |
+| 1   | **DINOv2 ViT-B/14**         | Feature extraction for SETR segmentation (768-dim)        |
+| 2   | **Qwen2-VL ViT**            | Visual feature extraction for VL understanding (1536-dim) |
+| 3   | **SETR Decoder (PUP)**      | Semantic class prediction (172 classes, COCO-Stuff)       |
+| 4   | **MaskedFeatureExtractor**  | Focuses ViT features on SAM-segmented region              |
+| 5   | **Vision-Language Adaptor** | 64 query tokens bridging vision → language space          |
+| 6   | **Vision Text Decoder**     | Generates context description from vision tokens          |
+| 7   | **SAM 2 Segmenter**         | Segments object from user click point                     |
+| 8   | **Prompt Constructor**      | Builds prompts with spatial + semantic context            |
+| 9   | **Qwen2-VL LLM**            | Generates natural-language answers                        |
 
-1. **Shared ViT Encoder**: Extracts visual features from Qwen2-VL
-2. **SETR Segmentation Decoder**: Predicts class for each region
-3. **Vision-Language Adaptor**: Transforms visual features → language embeddings
-4. **SAM 2 Segmenter**: Segments objects from user click
-5. **LLM Generator**: Qwen2-VL language model generates answers
+**Training strategy:**
+❄️ Frozen: Qwen2-VL ViT + SAM 2 + LLM + DINOv2 · 🔥 Trainable: SETR Decoder + Adaptor + TextDecoder
 
-## 📋 System Requirements
+---
 
-- **Python**: 3.8+
-- **GPU**: NVIDIA GPU with CUDA 11.8+ (recommended ≥8GB VRAM)
-- **RAM**: 16GB+
-- **OS**: Windows/Linux/macOS
+## 📋 Requirements
+
+| Component  | Requirement                                     |
+| ---------- | ----------------------------------------------- |
+| **Python** | 3.8+                                            |
+| **GPU**    | NVIDIA with CUDA 11.8+ (≥ 8GB VRAM recommended) |
+| **RAM**    | 16GB+                                           |
+| **OS**     | Windows / Linux / macOS                         |
+
+---
 
 ## 🚀 Installation
-
-### 1. Clone repository
 
 ```bash
 git clone https://github.com/ChinhocIT/GDA-VisionAssist.git
 cd GDA-VisionAssist
-```
 
-### 2. Create virtual environment
-
-```bash
 python -m venv venv
-source venv/bin/activate  # Linux/Mac
-# or
-venv\Scripts\activate     # Windows
-```
+source venv/bin/activate    # Linux/Mac
+# venv\Scripts\activate     # Windows
 
-### 3. Install dependencies
-
-```bash
 pip install -r requirements.txt
+
+python scripts/download_models.py     # download pretrained models
 ```
 
-### 4. Download models
-
-```bash
-python scripts/download_models.py
-```
-
-### 5. Configuration
-
-Create `.env` file from template:
-
-```bash
-cp .env.example .env
-```
-
-Edit `.env`:
-
-```env
-# Model paths
-QWEN_MODEL_NAME=Qwen/Qwen2-VL-2B-Instruct
-SAM_MODEL_NAME=facebook/sam-vit-huge
-SEG_CHECKPOINT_PATH=checkpoints/seg_decoder_best.pth
-ADAPTOR_CHECKPOINT_PATH=checkpoints/adaptor_best.pth
-
-# Device
-DEVICE=cuda
-DEBUG=False
-
-# Voice
-ENABLE_STT=True
-ENABLE_TTS=True
-```
+---
 
 ## 💡 Usage
 
-### Basic Usage
+GDA-VisionAssist supports **3 modes** of operation:
+
+### Mode 1: Desktop App (all-in-one)
+
+Webcam + model inference in a single process.
 
 ```bash
 python app.py
+
+# Advanced options
+python app.py --seg-checkpoint checkpoints/setr_dino_best.pth \
+              --adaptor-checkpoint checkpoints/adaptor_vizwiz/adaptor.pth
+python app.py --debug
 ```
 
-### Advanced Options
+### Mode 2: API Server + Camera Client
+
+Splits workload — server handles GPU inference, client handles webcam.
 
 ```bash
-# Specify checkpoint
-python app.py --seg-checkpoint path/to/seg.pth --adaptor-checkpoint path/to/adaptor.pth
+# Step 1: Start API server
+python -m src.app.api_server --host 127.0.0.1 --port 8765
 
-# Enable debug mode
-python app.py --debug
-
-# Use CPU
-python app.py --device cpu
+# Step 2: Run camera client
+python camera_client.py
 ```
+
+### Mode 3: Web UI (Browser)
+
+Open `app_mockup.html` in a browser while the API server is running.
+
+- 📷 Live camera via WebRTC
+- 🖱️ Click to segment with SAM
+- 🎙️ Hold `M` to ask by voice (Web Speech API)
+- 🔊 TTS reads results aloud
+- 📖 OCR button to read text
+- 🎨 Dark theme with real-time pipeline visualization
 
 ### Keyboard Controls
 
-| Key | Function |
-|-----|----------|
-| `Space` | Activate region selection mode |
-| `C` (hold) + Voice | Ask a question by voice |
-| `Enter` | Auto-describe selected region |
-| `S` | Save current image |
-| `D` | Toggle debug mode |
-| `Q` | Quit |
+| Key         | Desktop App        | Camera Client      | Web UI             |
+| ----------- | ------------------ | ------------------ | ------------------ |
+| `Click`     | Select point → SAM | Select point → SAM | Select point → SAM |
+| `D`         | Describe region    | Describe region    | 🔍 Button          |
+| `O`         | OCR                | OCR                | 📖 Button          |
+| `M` (hold)  | —                  | —                  | Voice input        |
+| `R`         | Reset mask         | Reset mask         | ↺ Button           |
+| `T`         | —                  | —                  | Toggle TTS         |
+| `Q` / `ESC` | Quit               | Quit               | —                  |
 
 ### Python API
 
@@ -132,88 +162,94 @@ python app.py --device cpu
 from src.core.gda import GlobalDescriptionAcquisition
 import cv2
 
-# Initialize
 gda = GlobalDescriptionAcquisition(device="cuda")
 
-# Load image
 image = cv2.imread("image.jpg")
 image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
-# Segment object (click point)
 mask = gda.sam_segmenter.segment_from_point(image_rgb, point=(320, 240))
-
-# Ask question
 result = gda.process_region(image_rgb, mask, user_query="What is this?")
 
-print(result['description'])
-# Output: "This is a gray laptop with a black keyboard and the screen is on."
+print(result['description'])      # "This is a gray laptop..."
+print(result['predicted_class'])   # "laptop"
+print(result['confidence'])        # 0.85
 ```
 
-## 📚 Documentation
+---
 
-- [Architecture Overview](docs/architecture.md)
-- [API Reference](docs/api.md)
-- [Training Guide](docs/training.md)
-- [Deployment Guide](docs/deployment.md)
+## 🌐 REST API
 
-## 🧪 Testing
+| Endpoint        | Method | Input                      | Output                                                      |
+| --------------- | ------ | -------------------------- | ----------------------------------------------------------- |
+| `/health`       | GET    | —                          | `{ ok, model_loaded }`                                      |
+| `/api/segment`  | POST   | `image` + `x, y`           | `{ mask_png_base64, sam_sec, mask_area_ratio }`             |
+| `/api/describe` | POST   | `image` + `mask` + `query` | `{ description, predicted_class, confidence, latency_sec }` |
+| `/api/ocr`      | POST   | `image` + `mask`           | `{ description, latency_sec }`                              |
 
-```bash
-# Run all tests
-pytest tests/
+---
 
-# Test with coverage
-pytest --cov=src tests/
+## 📂 Project Structure
 
-# Test specific module
-pytest tests/test_models.py
 ```
+GDA-VisionAssist/
+├── app.py                  # Desktop entry point
+├── camera_client.py        # Camera client → API calls
+├── app_mockup.html         # Web UI (browser)
+├── src/
+│   ├── core/               # GDA pipeline, prompt constructor
+│   ├── models/             # DINOv2, SETR, Adaptor, SAM2, TextDecoder
+│   ├── app/                # FastAPI server, desktop controller, config
+│   ├── io/                 # Camera, keyboard, voice (STT+TTS)
+│   └── utils/              # Logger, visualization, data helpers
+├── config/                 # app_config.yaml, model_config.yaml
+├── checkpoints/            # Trained SETR + Adaptor weights
+├── scripts/                # Training, evaluation, benchmarking
+├── tests/                  # Unit tests
+└── examples/               # Usage examples
+```
+
+---
 
 ## 🎓 Training
 
-### Train Segmentation Decoder
-
 ```bash
-python scripts/train_decoder.py \
-  --dataset coco_stuff \
-  --epochs 15 \
-  --batch-size 8 \
-  --lr 1e-4
+# SETR Decoder (DINOv2 → COCO-Stuff 171 classes)
+python scripts/train_setr.py --epochs 15 --batch-size 8 --lr 1e-4
+
+# Vision-Language Adaptor (VizWiz dataset)
+python scripts/train_adaptor_vizwiz_v2.py --epochs 20 --batch-size 4
+
+# End-to-end evaluation
+python scripts/evaluate_e2e.py
+python scripts/benchmark.py
 ```
 
-### Train Vision-Language Adaptor
-
-```bash
-python scripts/train_adaptor.py \
-  --dataset vqa_v2 \
-  --epochs 20 \
-  --batch-size 4
-```
-
-## 📊 Performance
-
-| Model | GPU | FPS |
-|-------|-----|-----|
-| Full System | RTX 4060 | ~8 |
+---
 
 ## 🙏 Acknowledgments
 
-- **Qwen2-VL**: Alibaba Cloud
-- **SAM 2**: Meta AI
-- **SETR**: Fudan University
-- **COCO-Stuff**: Stanford University
+This project builds upon several outstanding open-source works:
+
+| Model / Dataset          | Source                                                                   | Usage in GDA                               |
+| ------------------------ | ------------------------------------------------------------------------ | ------------------------------------------ |
+| **Qwen2-VL-2B-Instruct** | [Alibaba Cloud](https://github.com/QwenLM/Qwen2-VL)                      | Vision encoder + LLM backbone              |
+| **SAM 2**                | [Meta AI (FAIR)](https://github.com/facebookresearch/segment-anything-2) | Click-based object segmentation            |
+| **DINOv2 ViT-B/14**      | [Meta AI (FAIR)](https://github.com/facebookresearch/dinov2)             | Feature extraction for SETR decoder        |
+| **SETR**                 | [Fudan University](https://github.com/fudan-zvg/SETR)                    | Semantic segmentation decoder architecture |
+| **COCO-Stuff**           | [Stanford University](https://github.com/nightrome/cocostuff)            | 171-class segmentation training data       |
+| **VizWiz**               | [VizWiz.org](https://vizwiz.org/)                                        | Visual question answering training data    |
+| **edge-tts**             | [rany2/edge-tts](https://github.com/rany2/edge-tts)                      | Text-to-Speech engine                      |
+| **SpeechRecognition**    | [Uberi](https://github.com/Uberi/speech_recognition)                     | Speech-to-Text via Google API              |
+
+---
 
 ## 📞 Contact
 
-- **Author**: Khanh Chien Ngo
-- **Email**: khanhchien6@gmail.com
-- **GitHub**: [@KhanhChien](https://github.com/khanhchien23)
-
-## ⭐ Citation
+**Khanh Chien Ngo** — [khanhchien6@gmail.com](mailto:khanhchien6@gmail.com) — [@KhanhChien](https://github.com/khanhchien23)
 
 ```bibtex
 @software{gda_visionassist,
-  author = {Khanh Chien},
+  author = {Khanh Chien Ngo},
   title = {GDA-VisionAssist: Vision-Language System for Assisting Visually Impaired Individuals},
   year = {2025},
   url = {https://github.com/ChinhocIT/GDA-VisionAssist}

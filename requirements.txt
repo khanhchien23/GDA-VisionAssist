@@ -1,0 +1,38 @@
+# =============================================================
+# GDA-VisionAssist — Full System Requirements
+# =============================================================
+
+# ── Deep Learning Core ──
+torch>=2.0.0
+torchvision>=0.15.0
+transformers>=4.37.0
+accelerate>=0.25.0
+bitsandbytes>=0.41.0          # 8-bit quantization for Qwen2-VL
+
+# ── Vision ──
+opencv-python>=4.8.0
+Pillow>=9.0.0
+numpy>=1.21.0
+
+# ── Segmentation ──
+segment-anything-2            # SAM 2 (Meta AI)
+
+# ── Voice I/O ──
+edge-tts>=6.1.0               # Text-to-Speech (Microsoft Edge)
+SpeechRecognition>=3.10.0     # Speech-to-Text (Google API)
+PyAudio>=0.2.13               # Microphone input
+pygame>=2.5.0                 # Audio playback for TTS
+
+# ── Keyboard / Input ──
+pynput>=1.7.0                 # Keyboard listener (desktop app)
+
+# ── Config / Utils ──
+pyyaml>=6.0
+
+# ── API Server (FastAPI) ──
+fastapi>=0.109.0
+uvicorn[standard]>=0.27.0
+python-multipart>=0.0.6       # File upload parsing
+
+# ── Camera Client ──
+requests>=2.28.0              # HTTP calls to API server

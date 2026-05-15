@@ -57,10 +57,17 @@ class InferenceManager:
         if self.worker_thread and self.worker_thread.is_alive():
             self.worker_thread.join(timeout=2.0)
     
-    def submit(self, frame_rgb, mask, user_query: Optional[str] = None) -> bool:
+    def submit(self, frame_rgb, mask, user_query: Optional[str] = None,
+               task_type: str = 'describe') -> bool:
         """
         Submit a task to the inference queue.
         
+        Args:
+            frame_rgb: Camera frame
+            mask: Segmentation mask (can be None for 'scene' mode)
+            user_query: User's question
+            task_type: 'describe' | 'ocr' | 'scene'
+            
         Returns:
             True if submitted successfully, False if queue is full or busy
         """
@@ -69,7 +76,13 @@ class InferenceManager:
                 return False
         
         try:
-            self.queue.put_nowait((frame_rgb.copy(), mask.copy(), user_query))
+            task_data = {
+                'frame_rgb': frame_rgb.copy(),
+                'mask': mask.copy() if mask is not None else None,
+                'user_query': user_query,
+                'task_type': task_type
+            }
+            self.queue.put_nowait(task_data)
             return True
         except queue.Full:
             return False
@@ -118,7 +131,15 @@ class InferenceManager:
             if task is None:
                 break
             
-            frame_rgb, mask, user_query = task
+            # Support both old tuple format and new dict format
+            if isinstance(task, dict):
+                frame_rgb = task['frame_rgb']
+                mask = task['mask']
+                user_query = task['user_query']
+                task_type = task.get('task_type', 'describe')
+            else:
+                frame_rgb, mask, user_query = task
+                task_type = 'describe'
             
             # Initialize processing state
             with self.lock:
@@ -128,27 +149,44 @@ class InferenceManager:
             
             try:
                 start_time = time.time()
-                query_text = user_query if user_query else 'Mô tả tự động'
-                print(f"\n🔄 Worker: {query_text}")
+                
+                type_labels = {
+                    'describe': '🔍 Mô tả',
+                    'ocr': '📖 OCR',
+                    'scene': '🌍 Toàn cảnh'
+                }
+                type_label = type_labels.get(task_type, task_type)
+                query_text = user_query if user_query else type_label
+                print(f"\n🔄 Worker [{type_label}]: {query_text}")
                 
                 # Update progress
                 with self.lock:
                     self.result.progress = 10
                 
-                # Run inference
-                result = self.gda.process_region(frame_rgb, mask, user_query)
+                # Route to correct GDA method based on task_type
+                if task_type == 'ocr':
+                    result = self.gda.ocr_region(frame_rgb, mask)
+                elif task_type == 'scene':
+                    result = self.gda.describe_scene(frame_rgb)
+                else:
+                    result = self.gda.process_region(frame_rgb, mask, user_query)
+                
                 elapsed = time.time() - start_time
-                # Ghi lại thời gian xử lý để hiển thị phía UI
+                
+                # Normalize result
                 if isinstance(result, dict):
                     result.setdefault('latency_sec', elapsed)
+                    result.setdefault('task_type', task_type)
+                    result.setdefault('query', query_text)
                 else:
                     result = {
                         'description': str(result),
                         'error': False,
                         'predicted_class': None,
                         'confidence': 0.0,
-                        'query': user_query if user_query else query_text,
+                        'query': query_text,
                         'latency_sec': elapsed,
+                        'task_type': task_type,
                     }
                 
                 with self.lock:
@@ -170,6 +208,7 @@ class InferenceManager:
                     'confidence': 0.0,
                     'query': user_query if user_query else "Lỗi",
                     'latency_sec': elapsed,
+                    'task_type': task_type if 'task_type' in dir() else 'describe',
                 }
             
             finally:

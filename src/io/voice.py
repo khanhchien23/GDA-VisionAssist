@@ -110,109 +110,127 @@ def init_tts():
         return False
 
 def tts_worker():
-    """TTS worker với error handling tốt hơn"""
+    """TTS worker — streaming từ memory, không ghi file"""
     import edge_tts
     import pygame
-    import tempfile
-    import os
-    import uuid
+    import io
     import asyncio
+    import time as _time
     
     # Create event loop for this thread
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
     
-    async def speak_with_retry(text, max_retries=2):
-        """Speak với retry logic"""
+    async def speak_streaming(text, max_retries=2):
+        """Stream TTS audio trực tiếp vào memory → play ngay"""
+        
+        voices = [
+            "vi-VN-HoaiMyNeural",
+            "vi-VN-NamMinhNeural",
+        ]
+        
         for attempt in range(max_retries):
-            temp_file = None
-            try:
-                # Create temp file
-                temp_file = os.path.join(
-                    tempfile.gettempdir(), 
-                    f"tts_{uuid.uuid4().hex[:8]}.mp3"
-                )
-                
-                voices = [
-                    "vi-VN-HoaiMyNeural",
-                    "vi-VN-NamMinhNeural",
-                    "en-US-AriaNeural"
-                ]
-                
-                last_error = None
-                
-                for voice in voices:
-                    try:
-                        if attempt > 0:
-                            print(f"   🔄 Retry {attempt+1}/{max_retries} with {voice}...")
-                        
-                        communicate = edge_tts.Communicate(
-                            text, 
-                            voice,
-                            rate="+5%",
-                        )
-                        
-                        await asyncio.wait_for(
-                            communicate.save(temp_file),
-                            timeout=10.0
-                        )
-                        
-                        # Check file exists and not empty
-                        if not os.path.exists(temp_file):
-                            raise FileNotFoundError("TTS file not created")
-                        
-                        if os.path.getsize(temp_file) < 1000:
-                            raise ValueError("TTS file too small")
-                        
-                        # Play audio
-                        pygame.mixer.music.load(temp_file)
-                        pygame.mixer.music.play()
-                        
-                        while pygame.mixer.music.get_busy():
-                            await asyncio.sleep(0.05)
-                        
-                        pygame.mixer.music.stop()
-                        pygame.mixer.music.unload()
-                        
-                        await asyncio.sleep(0.1)
-                        
-                        break
-                        
-                    except asyncio.TimeoutError:
-                        last_error = f"Timeout with {voice}"
-                        continue
-                    except Exception as voice_err:
-                        last_error = f"{voice}: {str(voice_err)}"
-                        continue
-                
-                else:
-                    if last_error:
-                        raise Exception(f"All voices failed. Last: {last_error}")
-                
-                return
-                
-            except asyncio.TimeoutError:
-                print(f"   ⏰ TTS timeout (attempt {attempt+1})")
-                if attempt < max_retries - 1:
-                    await asyncio.sleep(1)
-                    continue
-                else:
-                    print(f"   ❌ TTS failed after {max_retries} attempts: timeout")
+            for voice in voices:
+                try:
+                    if attempt > 0:
+                        print(f"   🔄 Retry {attempt+1}/{max_retries} with {voice}...")
                     
-            except Exception as e:
-                print(f"   ⚠️ TTS error (attempt {attempt+1}): {e}")
-                if attempt < max_retries - 1:
-                    await asyncio.sleep(1)
-                    continue
-                else:
-                    print(f"   ❌ TTS failed after {max_retries} attempts")
+                    t_tts_total = _time.time()
                     
-            finally:
-                if temp_file and os.path.exists(temp_file):
-                    try:
-                        os.remove(temp_file)
-                    except:
-                        pass
+                    communicate = edge_tts.Communicate(
+                        text,
+                        voice,
+                        rate="+5%",
+                    )
+                    
+                    # Stream audio chunks trực tiếp vào BytesIO (không ghi file)
+                    audio_buffer = io.BytesIO()
+                    
+                    t_gen = _time.time()
+                    await asyncio.wait_for(
+                        _collect_stream(communicate, audio_buffer),
+                        timeout=10.0
+                    )
+                    t_gen_elapsed = _time.time() - t_gen
+                    
+                    # Kiểm tra buffer có dữ liệu
+                    if audio_buffer.tell() < 1000:
+                        raise ValueError("Audio buffer too small")
+                    
+                    # Play trực tiếp từ memory
+                    audio_buffer.seek(0)
+                    t_play = _time.time()
+                    pygame.mixer.music.load(audio_buffer, "mp3")
+                    pygame.mixer.music.play()
+                    
+                    while pygame.mixer.music.get_busy():
+                        await asyncio.sleep(0.05)
+                    t_play_elapsed = _time.time() - t_play
+                    
+                    pygame.mixer.music.stop()
+                    pygame.mixer.music.unload()
+                    
+                    # Giải phóng buffer
+                    audio_buffer.close()
+                    
+                    t_tts_total_elapsed = _time.time() - t_tts_total
+                    print(f"   ⏱️ TTS: tổng={t_tts_total_elapsed:.3f}s (sinh audio={t_gen_elapsed:.3f}s, phát={t_play_elapsed:.3f}s)")
+                    
+                    return  # Thành công
+                    
+                except asyncio.TimeoutError:
+                    print(f"   ⏰ TTS timeout: {voice}")
+                    continue
+                except Exception as e:
+                    # Nếu pygame không hỗ trợ load từ BytesIO → fallback file
+                    if "load" in str(e).lower() or "format" in str(e).lower():
+                        await _speak_file_fallback(text, voice)
+                        return
+                    print(f"   ⚠️ TTS error ({voice}): {e}")
+                    continue
+            
+            # Hết voices, retry
+            if attempt < max_retries - 1:
+                await asyncio.sleep(0.5)
+        
+        print(f"   ❌ TTS failed after {max_retries} attempts")
+    
+    async def _collect_stream(communicate, buffer):
+        """Thu thập tất cả audio chunks từ edge-tts stream vào buffer"""
+        async for chunk in communicate.stream():
+            if chunk["type"] == "audio":
+                buffer.write(chunk["data"])
+    
+    async def _speak_file_fallback(text, voice):
+        """Fallback: ghi file nếu streaming không hoạt động"""
+        import tempfile, os, uuid
+        
+        temp_file = os.path.join(
+            tempfile.gettempdir(),
+            f"tts_{uuid.uuid4().hex[:8]}.mp3"
+        )
+        
+        try:
+            communicate = edge_tts.Communicate(text, voice, rate="+5%")
+            await asyncio.wait_for(communicate.save(temp_file), timeout=10.0)
+            
+            if os.path.exists(temp_file) and os.path.getsize(temp_file) > 1000:
+                pygame.mixer.music.load(temp_file)
+                pygame.mixer.music.play()
+                
+                while pygame.mixer.music.get_busy():
+                    await asyncio.sleep(0.05)
+                
+                pygame.mixer.music.stop()
+                pygame.mixer.music.unload()
+        except Exception as e:
+            print(f"   ❌ TTS file fallback error: {e}")
+        finally:
+            if os.path.exists(temp_file):
+                try:
+                    os.remove(temp_file)
+                except:
+                    pass
     
     # Main worker loop
     while True:
@@ -222,7 +240,7 @@ def tts_worker():
             break
         
         try:
-            loop.run_until_complete(speak_with_retry(text))
+            loop.run_until_complete(speak_streaming(text))
         except Exception as e:
             print(f"   ❌ TTS worker error: {e}")
         finally:

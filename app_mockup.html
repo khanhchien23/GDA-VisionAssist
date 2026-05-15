@@ -1,0 +1,934 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>GDA VisionAssist</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500&family=Figtree:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#080a18;
+  --s1:#0d0f1e;
+  --s2:#12152a;
+  --s3:#181b2e;
+  --border:rgba(255,255,255,0.07);
+  --a1:#39ffa0;
+  --a2:#5b8fff;
+  --a3:#ff6b6b;
+  --a4:#ffd166;
+  --purple:#a78bfa;
+  --text:#dde2f0;
+  --muted:#4a5070;
+  --muted2:#6b7299;
+  --mono:'JetBrains Mono',monospace;
+  --sans:'Figtree',sans-serif;
+  --display:'Syne',sans-serif;
+}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--sans)}
+
+.app{display:grid;grid-template-rows:58px 1fr;height:100vh;overflow:hidden}
+.main{display:grid;grid-template-columns:1fr 380px;overflow:hidden}
+
+/* HEADER */
+header{
+  display:flex;align-items:center;gap:14px;
+  padding:0 24px;
+  background:var(--s1);
+  border-bottom:1px solid var(--border);
+  position:relative;z-index:20;
+}
+.hlogo{
+  font-family:var(--display);font-size:15px;font-weight:800;
+  letter-spacing:.06em;color:#fff;
+  display:flex;align-items:center;gap:10px;
+}
+.hlogo-icon{
+  width:30px;height:30px;border-radius:9px;
+  background:linear-gradient(135deg,#a78bfa,#5b8fff);
+  display:grid;place-items:center;font-size:16px;flex-shrink:0;
+}
+.hspace{flex:1}
+.api-bar{display:flex;align-items:center;gap:8px}
+.api-inp{
+  font-family:var(--mono);font-size:11px;
+  background:var(--s2);border:1px solid var(--border);
+  border-radius:8px;padding:5px 12px;color:var(--text);
+  width:200px;outline:none;transition:border-color .2s;
+}
+.api-inp:focus{border-color:var(--a2)}
+.ping-btn{
+  font-family:var(--mono);font-size:11px;
+  background:transparent;border:1px solid var(--border);
+  border-radius:8px;padding:5px 12px;color:var(--muted2);
+  cursor:pointer;transition:all .2s;
+}
+.ping-btn:hover{border-color:var(--a2);color:var(--a2)}
+.conn-dot{width:8px;height:8px;border-radius:50%;background:var(--muted);transition:all .4s;flex-shrink:0}
+.conn-dot.ok{background:var(--a1);box-shadow:0 0 8px var(--a1)}
+.conn-dot.err{background:var(--a3)}
+
+/* CAMERA */
+.cam-pane{
+  position:relative;background:#000;
+  display:flex;align-items:center;justify-content:center;
+  overflow:hidden;
+}
+.cam-pane.live{cursor:crosshair}
+.cam-pane.busy{cursor:wait}
+#vid{width:100%;height:100%;object-fit:contain;display:none}
+#cvs{position:absolute;inset:0;pointer-events:none;width:100%;height:100%}
+.cam-empty{
+  display:flex;flex-direction:column;align-items:center;gap:14px;
+  color:var(--muted);text-align:center;
+}
+.cam-empty .icon-wrap{
+  width:80px;height:80px;border-radius:50%;
+  border:2px dashed rgba(255,255,255,0.1);
+  display:flex;align-items:center;justify-content:center;
+  font-size:32px;opacity:.35;
+}
+.cam-empty p{font-family:var(--mono);font-size:11px;line-height:1.8;color:var(--muted2)}
+
+/* scanline */
+.scanline{
+  display:none;position:absolute;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,transparent,var(--a1),transparent);
+  animation:scan 1s linear infinite;pointer-events:none;
+}
+.cam-pane.busy .scanline{display:block}
+@keyframes scan{0%{top:0}100%{top:100%}}
+
+/* ripple */
+.ripple{
+  position:absolute;border-radius:50%;
+  border:2px solid var(--a1);pointer-events:none;
+  animation:rippleOut .65s ease-out forwards;
+}
+@keyframes rippleOut{
+  0%{width:0;height:0;opacity:1;transform:translate(-50%,-50%)}
+  100%{width:90px;height:90px;opacity:0;transform:translate(-50%,-50%)}
+}
+
+.mic-overlay{
+  display:none;
+  position:absolute;bottom:60px;left:50%;transform:translateX(-50%);
+  background:rgba(255,107,107,0.15);
+  border:1px solid rgba(255,107,107,0.5);
+  border-radius:24px;padding:8px 20px;
+  font-family:var(--mono);font-size:12px;color:var(--a3);
+  backdrop-filter:blur(12px);
+  animation:micOverlayPulse 1s ease infinite;
+  white-space:nowrap;
+  z-index:10;
+}
+.mic-overlay.show{display:block}
+@keyframes micOverlayPulse{0%,100%{opacity:1}50%{opacity:.6}}
+
+.mask-badge{
+  display:none;position:absolute;top:12px;right:12px;
+  background:rgba(57,255,160,0.15);border:1px solid rgba(57,255,160,0.4);
+  border-radius:20px;padding:4px 12px;
+  font-family:var(--mono);font-size:11px;color:var(--a1);
+  backdrop-filter:blur(8px);
+}
+
+.pipeline{
+  position:absolute;bottom:16px;left:50%;transform:translateX(-50%);
+  background:rgba(8,10,24,.88);border:1px solid var(--border);
+  border-radius:24px;padding:7px 18px;
+  display:flex;gap:10px;align-items:center;
+  backdrop-filter:blur(12px);
+  opacity:0;transition:opacity .3s;pointer-events:none;
+  white-space:nowrap;
+}
+.pipeline.show{opacity:1}
+.pipe-step{
+  font-family:var(--mono);font-size:10px;
+  padding:3px 10px;border-radius:10px;
+  background:rgba(255,255,255,.04);color:var(--muted);
+  border:1px solid transparent;
+  transition:all .3s;
+}
+.pipe-step.done{background:rgba(57,255,160,.12);color:var(--a1);border-color:rgba(57,255,160,.25)}
+.pipe-step.active{background:rgba(91,143,255,.15);color:var(--a2);border-color:rgba(91,143,255,.3);animation:pipePulse 1s ease infinite}
+@keyframes pipePulse{0%,100%{opacity:1}50%{opacity:.6}}
+.pipe-arrow{color:var(--muted);font-family:var(--mono);font-size:10px}
+
+.sidebar{
+  background:var(--s1);border-left:1px solid var(--border);
+  display:flex;flex-direction:column;overflow:hidden;
+}
+
+.ctrl{padding:18px 16px 14px;border-bottom:1px solid var(--border);display:flex;flex-direction:column;gap:11px}
+.ctrl-label{
+  font-family:var(--mono);font-size:10px;letter-spacing:.1em;
+  color:var(--muted2);text-transform:uppercase;
+}
+
+.btn-cam-main{
+  display:flex;align-items:center;justify-content:center;gap:9px;
+  padding:11px 16px;border-radius:12px;
+  background:linear-gradient(135deg,#a78bfa,#5b8fff);
+  color:#fff;font-family:var(--sans);font-size:13px;font-weight:600;
+  cursor:pointer;border:none;width:100%;transition:opacity .15s,transform .1s;
+}
+.btn-cam-main:hover{opacity:.9}
+.btn-cam-main:active{transform:scale(.97)}
+.btn-cam-main.stop{background:linear-gradient(135deg,#ff6b6b,#ff9f43)}
+
+.voice-banner{
+  display:flex;align-items:center;gap:9px;
+  padding:8px 12px;border-radius:10px;
+  background:rgba(255,107,107,0.08);
+  border:1px solid rgba(255,107,107,0.25);
+  font-family:var(--mono);font-size:11px;color:var(--a3);
+}
+.voice-banner.hidden{display:none}
+.vb-dot{
+  width:8px;height:8px;border-radius:50%;
+  background:var(--a3);flex-shrink:0;
+  animation:micPulse .9s ease infinite;
+}
+@keyframes micPulse{0%,100%{box-shadow:0 0 0 0 rgba(255,107,107,.5)}50%{box-shadow:0 0 0 5px rgba(255,107,107,0)}}
+
+.qry-wrap{
+  position:relative;display:flex;flex-direction:column;gap:0;
+}
+textarea#qry{
+  resize:none;min-height:62px;
+  background:var(--s2);border:1px solid var(--border);
+  border-radius:12px 12px 0 0;padding:9px 12px;
+  color:var(--text);font-family:var(--sans);font-size:12px;
+  line-height:1.55;outline:none;
+  border-bottom:none;
+}
+textarea#qry:focus{border-color:var(--a2)}
+textarea#qry.listening{border-color:rgba(255,107,107,0.5)!important;}
+.qry-toolbar{
+  display:flex;align-items:center;gap:6px;
+  background:var(--s2);border:1px solid var(--border);border-top:1px solid var(--border);
+  border-radius:0 0 12px 12px;padding:6px 8px;
+}
+.qry-toolbar-spacer{flex:1}
+.mic-btn{
+  width:30px;height:30px;border-radius:50%;
+  background:rgba(167,139,250,0.12);border:1px solid rgba(167,139,250,0.3);
+  color:var(--purple);font-size:14px;
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;transition:all .2s;flex-shrink:0;
+}
+.mic-btn:hover{background:rgba(167,139,250,0.22);}
+.mic-btn.recording{
+  background:rgba(255,107,107,0.2);border-color:rgba(255,107,107,0.5);color:var(--a3);
+  animation:micBtnPulse .9s ease infinite;
+}
+@keyframes micBtnPulse{0%,100%{box-shadow:0 0 0 0 rgba(255,107,107,.4)}50%{box-shadow:0 0 0 6px rgba(255,107,107,0)}}
+.qry-hint{font-family:var(--mono);font-size:10px;color:var(--muted);padding:0 4px}
+.clear-qry{
+  font-family:var(--mono);font-size:10px;color:var(--muted);
+  background:none;border:none;cursor:pointer;padding:2px 6px;border-radius:4px;
+}
+.clear-qry:hover{color:var(--a3)}
+
+.btn-row{display:flex;gap:8px}
+.btn-row .btn{flex:1}
+.btn{
+  display:flex;align-items:center;justify-content:center;gap:7px;
+  padding:10px 14px;border-radius:12px;border:1px solid var(--border);
+  background:var(--s2);color:var(--text);
+  font-family:var(--sans);font-size:12.5px;font-weight:500;
+  cursor:pointer;transition:all .15s;
+}
+.btn:hover{background:var(--s3);}
+.btn:active{transform:scale(.97)}
+.btn:disabled{opacity:.3;pointer-events:none}
+.btn.b{background:rgba(91,143,255,.12);border-color:rgba(91,143,255,.3);color:var(--a2)}
+.btn.y{background:rgba(255,209,102,.1);border-color:rgba(255,209,102,.3);color:var(--a4)}
+.btn.r{background:rgba(255,107,107,.1);border-color:rgba(255,107,107,.3);color:var(--a3)}
+.btn.wide{width:100%}
+
+.status{
+  display:flex;align-items:flex-start;gap:8px;
+  padding:9px 12px;border-radius:10px;
+  background:var(--s2);border:1px solid var(--border);
+  font-size:12px;line-height:1.5;color:var(--muted2);
+  min-height:40px;
+}
+.status.ok{border-color:rgba(57,255,160,.3);color:var(--a1)}
+.status.err{border-color:rgba(255,107,107,.3);color:var(--a3)}
+.status.busy{border-color:rgba(91,143,255,.3);color:var(--a2)}
+.s-icon{font-size:14px;flex-shrink:0;}
+.spinner{width:14px;height:14px;border:2px solid rgba(91,143,255,.2);border-top-color:var(--a2);border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.tts-row{display:flex;align-items:center;gap:9px;cursor:pointer;padding:2px 0}
+.tog{width:34px;height:19px;border-radius:10px;background:var(--s2);border:1px solid var(--border);position:relative;}
+.tog.on{background:var(--a1);border-color:var(--a1)}
+.tog::after{content:'';position:absolute;top:2px;left:2px;width:13px;height:13px;border-radius:50%;background:#fff;transition:transform .2s}
+.tog.on::after{transform:translateX(15px)}
+.tts-label{font-size:12px;color:var(--muted2)}
+
+.results{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px}
+.empty{
+  flex:1;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  gap:12px;color:var(--muted);text-align:center;padding:20px;
+}
+.empty .eicon{
+  width:48px;height:48px;border-radius:14px;
+  background:rgba(167,139,250,0.1);border:1px solid rgba(167,139,250,0.2);
+  display:flex;align-items:center;justify-content:center;font-size:22px;
+}
+.empty p{font-family:var(--mono);font-size:11px;color:var(--muted)}
+
+.card{
+  background:var(--s2);border:1px solid var(--border);
+  border-radius:14px;overflow:hidden;
+  animation:cardIn .3s ease;
+}
+@keyframes cardIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.card-head{
+  display:flex;align-items:center;gap:8px;
+  padding:8px 12px;border-bottom:1px solid var(--border);
+}
+.tag{
+  padding:3px 9px;border-radius:6px;
+  font-family:var(--mono);font-size:10px;
+}
+.tag-desc{background:rgba(91,143,255,.12);color:var(--a2)}
+.tag-ocr{background:rgba(255,209,102,.12);color:var(--a4)}
+.tag-voice{background:rgba(255,107,107,.12);color:var(--a3)}
+.card-query{
+  font-family:var(--mono);font-size:10px;color:var(--purple);
+  padding:6px 12px 0;opacity:.8;
+}
+.card-time{font-family:var(--mono);font-size:10px;color:var(--muted);margin-left:auto}
+.card-body{padding:10px 12px;font-size:13px;line-height:1.7;white-space:pre-wrap;color:var(--text)}
+.card-meta{padding:2px 12px 10px;font-family:var(--mono);font-size:10px;color:var(--muted)}
+
+.kbd-bar{
+  padding:8px 14px;border-top:1px solid var(--border);
+  display:flex;gap:10px;flex-wrap:wrap;justify-content:center;
+}
+.kh{display:flex;align-items:center;gap:4px;font-size:11px;color:var(--muted)}
+kbd{
+  background:var(--s2);border:1px solid var(--border);
+  border-radius:4px;padding:1px 6px;
+  font-family:var(--mono);font-size:10px;
+}
+.ctrl-divider{height:1px;background:var(--border);margin:2px -16px}
+</style>
+</head>
+<body>
+<div class="app">
+<header>
+  <div class="hlogo">
+    <div class="hlogo-icon">👁</div>
+    GDA VISIONASSIST
+  </div>
+  <div class="hspace"></div>
+  <div class="api-bar">
+    <div class="conn-dot" id="connDot"></div>
+    <input class="api-inp" id="apiUrl" value="http://127.0.0.1:8765" placeholder="http://127.0.0.1:8765"/>
+    <button class="ping-btn" onclick="ping()">Ping</button>
+  </div>
+</header>
+
+<div class="main">
+  <div class="cam-pane" id="camPane">
+    <div class="scanline"></div>
+    <div class="cam-empty" id="camEmpty">
+      <div class="icon-wrap">📷</div>
+      <p>Nhấn <strong>Bật Camera</strong> để bắt đầu<br/>rồi chạm vào vật thể để SAM phân vùng</p>
+    </div>
+    <video id="vid" autoplay playsinline muted></video>
+    <canvas id="cvs"></canvas>
+    <div class="mask-badge" id="maskBadge"></div>
+    <div class="mic-overlay" id="micOverlay">🎙 Đang nghe... thả M để gửi</div>
+    <div class="pipeline" id="pipeline">
+      <span class="pipe-step" id="ps-sam">SAM 2</span>
+      <span class="pipe-arrow">→</span>
+      <span class="pipe-step" id="ps-setr">SETR</span>
+      <span class="pipe-arrow">→</span>
+      <span class="pipe-step" id="ps-qwen">Qwen2-VL</span>
+      <span class="pipe-arrow">→</span>
+      <span class="pipe-step" id="ps-tts">TTS</span>
+    </div>
+  </div>
+
+  <aside class="sidebar">
+    <div class="ctrl">
+      <button class="btn-cam-main" id="btnCam" onclick="toggleCam()">▶ Bật Camera</button>
+      <div class="ctrl-divider"></div>
+      <div class="ctrl-label">Câu hỏi (giữ M để nói)</div>
+      <div class="voice-banner hidden" id="voiceBanner">
+        <div class="vb-dot"></div>
+        <span id="voiceBannerTxt">Đang nghe... thả M để gửi câu hỏi</span>
+      </div>
+      <div class="qry-wrap">
+        <textarea id="qry" placeholder="Để trống → mô tả tự động&#10;Ví dụ: Đây là gì? Màu gì? Của hãng nào?"></textarea>
+        <div class="qry-toolbar">
+          <span class="qry-hint">🎙 Giữ M · thả → tự trả lời</span>
+          <div class="qry-toolbar-spacer"></div>
+          <button class="clear-qry" onclick="clearQuery()">✕ Xoá</button>
+          <button class="mic-btn" id="micBtn">🎙</button>
+        </div>
+      </div>
+      <div class="btn-row">
+        <button class="btn b" id="btnDesc" onclick="doDescribe()" disabled>🔍 Mô tả</button>
+        <button class="btn y" id="btnOcr" onclick="doOcr()" disabled>📖 Đọc chữ</button>
+      </div>
+      <button class="btn wide r" id="btnReset" onclick="doReset()" disabled>↺ Reset mask</button>
+      <div class="ctrl-divider"></div>
+      <div class="tts-row" onclick="toggleTts()">
+        <div class="tog on" id="ttsToggle"></div>
+        <span class="tts-label">Đọc to kết quả (TTS)</span>
+      </div>
+      <div class="status" id="statusBox">
+        <span class="s-icon">💬</span>
+        <span id="statusTxt">Chưa bật camera</span>
+      </div>
+    </div>
+    <div class="results" id="results">
+      <div class="empty" id="emptyState">
+        <div class="eicon">🎯</div>
+        <p>① Click vào vật trên video (SAM)<br/>② Giữ M → nói câu hỏi → thả M<br/>③ Hệ thống tự trả lời</p>
+      </div>
+    </div>
+    <div class="kbd-bar">
+      <div class="kh"><kbd>Click</kbd>SAM</div>
+      <div class="kh"><kbd>D</kbd>Mô tả</div>
+      <div class="kh"><kbd>O</kbd>OCR</div>
+      <div class="kh"><kbd>R</kbd>Reset</div>
+      <div class="kh"><kbd>M (giữ)</kbd>Hỏi</div>
+      <div class="kh"><kbd>T</kbd>TTS</div>
+    </div>
+  </aside>
+</div>
+</div>
+
+<script>
+var S = {
+  stream: null, camOn: false, busy: false, tts: true,
+  maskBlob: null, maskImg: null, snap: null, clickPt: null,
+  recognition: null, micPress: false,
+  voiceTranscript: ''
+};
+var keyMPressed = false;
+var micPermissionGranted = false;
+
+var vid = document.getElementById('vid');
+var cvs = document.getElementById('cvs');
+var ctx = cvs.getContext('2d');
+var pane = document.getElementById('camPane');
+var badge = document.getElementById('maskBadge');
+var pipeline = document.getElementById('pipeline');
+var micBtn = document.getElementById('micBtn');
+var micOverlay = document.getElementById('micOverlay');
+var voiceBanner = document.getElementById('voiceBanner');
+var voiceBannerTxt = document.getElementById('voiceBannerTxt');
+
+document.getElementById('ttsToggle').className = 'tog on';
+
+function base() {
+  return (document.getElementById('apiUrl').value.trim() || 'http://127.0.0.1:8765').replace(/\/$/, '');
+}
+
+function ping() {
+  var dot = document.getElementById('connDot');
+  dot.className = 'conn-dot';
+  fetch(base() + '/health', { signal: AbortSignal.timeout(4000) })
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      dot.className = 'conn-dot ' + (d.ok ? 'ok' : 'err');
+      setStatus(d.ok ? '✅ Server OK' + (d.model_loaded ? ' · Model loaded' : ' · Model chưa load') : '⚠️ Server lỗi', d.ok ? 'ok' : 'err');
+    })
+    .catch(function() { dot.className = 'conn-dot err'; setStatus('❌ Không kết nối được server', 'err'); });
+}
+ping();
+setInterval(ping, 10000);
+
+function toggleCam() { S.camOn ? stopCam() : startCam(); }
+
+function startCam() {
+  navigator.mediaDevices.getUserMedia({ video: { width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false })
+    .then(function(s) {
+      S.stream = s;
+      vid.srcObject = s;
+      vid.style.display = 'block';
+      document.getElementById('camEmpty').style.display = 'none';
+      S.camOn = true;
+      var b = document.getElementById('btnCam');
+      b.textContent = '⏹ Tắt Camera';
+      b.className = 'btn-cam-main stop';
+      pane.classList.add('live');
+      setStatus('📷 Camera đang chạy — click vào vật để phân vùng', 'ok');
+      requestAnimationFrame(loop);
+    })
+    .catch(function(e) { setStatus('❌ Không mở camera: ' + e.message, 'err'); });
+}
+
+function stopCam() {
+  if (S.stream) S.stream.getTracks().forEach(function(t) { t.stop(); });
+  S.stream = null;
+  vid.style.display = 'none';
+  S.camOn = false;
+  document.getElementById('camEmpty').style.display = 'flex';
+  var b = document.getElementById('btnCam');
+  b.textContent = '▶ Bật Camera';
+  b.className = 'btn-cam-main';
+  pane.classList.remove('live', 'busy');
+  doReset();
+  setStatus('Camera đã tắt', '');
+}
+
+function loop() {
+  if (!S.camOn) return;
+  resize();
+  ctx.clearRect(0, 0, cvs.width, cvs.height);
+  if (S.maskImg) drawMask();
+  if (S.clickPt) drawCross(S.clickPt.x, S.clickPt.y);
+  requestAnimationFrame(loop);
+}
+
+function resize() {
+  if (cvs.width !== pane.clientWidth || cvs.height !== pane.clientHeight) {
+    cvs.width = pane.clientWidth;
+    cvs.height = pane.clientHeight;
+  }
+}
+
+function videoRect() {
+  var vr = vid.getBoundingClientRect(), pr = pane.getBoundingClientRect();
+  var vw = vid.videoWidth || 1, vh = vid.videoHeight || 1;
+  var sc = Math.min(vr.width / vw, vr.height / vh);
+  var rw = vw * sc, rh = vh * sc;
+  return { ox: (vr.width - rw) / 2 + (vr.left - pr.left), oy: (vr.height - rh) / 2 + (vr.top - pr.top), rw: rw, rh: rh, sc: sc, vw: vw, vh: vh };
+}
+
+function drawMask() {
+  var r = videoRect();
+  ctx.save();
+  ctx.globalAlpha = 0.35;
+  ctx.drawImage(S.maskImg, r.ox, r.oy, r.rw, r.rh);
+  ctx.restore();
+  ctx.save();
+  ctx.globalAlpha = 0.85;
+  ctx.drawImage(S.maskImg, r.ox, r.oy, r.rw, r.rh);
+  ctx.restore();
+}
+
+function drawCross(x, y) {
+  ctx.save();
+  ctx.strokeStyle = '#39ffa0';
+  ctx.lineWidth = 1.5;
+  ctx.setLineDash([4, 3]);
+  ctx.beginPath(); ctx.moveTo(x - 22, y); ctx.lineTo(x + 22, y); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(x, y - 22); ctx.lineTo(x, y + 22); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.beginPath(); ctx.arc(x, y, 5, 0, Math.PI * 2);
+  ctx.fillStyle = '#39ffa0'; ctx.fill();
+  ctx.restore();
+}
+
+pane.addEventListener('click', function(ev) {
+  if (!S.camOn || S.busy) return;
+  var pr = pane.getBoundingClientRect();
+  var px = ev.clientX - pr.left, py = ev.clientY - pr.top;
+  var ripple = document.createElement('div');
+  ripple.className = 'ripple';
+  ripple.style.left = px + 'px'; ripple.style.top = py + 'px';
+  pane.appendChild(ripple);
+  setTimeout(function() { ripple.remove(); }, 700);
+  var r = videoRect();
+  var ix = Math.floor((px - r.ox) / r.sc), iy = Math.floor((py - r.oy) / r.sc);
+  if (ix < 0 || iy < 0 || ix >= r.vw || iy >= r.vh) return;
+  S.clickPt = { x: px, y: py };
+  var snap = document.createElement('canvas');
+  snap.width = r.vw; snap.height = r.vh;
+  snap.getContext('2d').drawImage(vid, 0, 0, r.vw, r.vh);
+  S.snap = snap;
+  S.maskBlob = null; S.maskImg = null;
+  badge.style.display = 'none';
+  setPipe('sam', 'active');
+  callSam(snap, ix, iy);
+});
+
+function callSam(snap, x, y) {
+  setBusy(true);
+  setStatus('⏳ SAM đang phân vùng...', 'busy');
+  document.getElementById('btnDesc').disabled = true;
+  document.getElementById('btnOcr').disabled = true;
+  document.getElementById('btnReset').disabled = true;
+  snap.toBlob(function(blob) {
+    var fd = new FormData();
+    fd.append('image', blob, 'frame.jpg');
+    fd.append('x', String(x)); fd.append('y', String(y));
+    fetch(base() + '/api/segment', { method: 'POST', body: fd })
+      .then(function(r) { if (!r.ok) return r.text().then(function(t) { throw new Error(t); }); return r.json(); })
+      .then(function(d) {
+        if (!d.ok) { setStatus('⚠️ ' + (d.message || 'SAM không tạo mask'), 'err'); setBusy(false); setPipe('', ''); return; }
+        setPipe('sam', 'done');
+        var b64 = d.mask_png_base64;
+        var bin = atob(b64), u8 = new Uint8Array(bin.length);
+        for (var i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
+        S.maskBlob = new Blob([u8], { type: 'image/png' });
+        var url = URL.createObjectURL(S.maskBlob);
+        var img = new Image();
+        img.onload = function() {
+          S.maskImg = img;
+          URL.revokeObjectURL(url);
+          var ratio = (d.mask_area_ratio * 100).toFixed(1);
+          badge.textContent = '✦ Mask ' + ratio + '%';
+          badge.style.display = 'block';
+          setStatus('✅ SAM xong · Giữ M → nói câu hỏi → thả M để trả lời', 'ok');
+          document.getElementById('btnDesc').disabled = false;
+          document.getElementById('btnOcr').disabled = false;
+          document.getElementById('btnReset').disabled = false;
+          setBusy(false);
+        };
+        img.src = 'data:image/png;base64,' + b64;
+      })
+      .catch(function(e) { setStatus('❌ SAM lỗi: ' + e.message, 'err'); setBusy(false); setPipe('', ''); });
+  }, 'image/jpeg', 0.92);
+}
+
+function doDescribe() {
+  if (!S.snap || !S.maskBlob || S.busy) return;
+  setBusy(true);
+  setStatus('⏳ Đang mô tả...', 'busy');
+  setPipe('setr', 'active');
+  var q = document.getElementById('qry').value.trim();
+  S.snap.toBlob(function(ib) {
+    var fd = new FormData();
+    fd.append('image', ib, 'frame.jpg');
+    fd.append('mask', S.maskBlob, 'mask.png');
+    fd.append('query', q);
+    fetch(base() + '/api/describe', { method: 'POST', body: fd })
+      .then(function(r) { if (!r.ok) return r.text().then(function(t) { throw new Error(t); }); return r.json(); })
+      .then(function(d) {
+        setPipe('qwen', 'done'); setPipe('tts', 'done');
+        var txt = d.description || '(Không có mô tả)';
+        var sec = (d.latency_sec || 0).toFixed(1);
+        addCard('KẾT QUẢ', txt, sec, 'voice', q);
+        setStatus('✅ Xong (' + sec + 's) — Giữ M để hỏi tiếp', 'ok');
+        if (S.tts) speak(txt, 'vi');
+        setBusy(false); setPipe('', '');
+      })
+      .catch(function(e) { setStatus('❌ Lỗi: ' + e.message, 'err'); setBusy(false); setPipe('', ''); });
+  }, 'image/jpeg', 0.92);
+}
+
+function doOcr() {
+  if (!S.snap || !S.maskBlob || S.busy) return;
+  setBusy(true);
+  setStatus('⏳ Đang đọc chữ...', 'busy');
+  setPipe('setr', 'active');
+  S.snap.toBlob(function(ib) {
+    var fd = new FormData();
+    fd.append('image', ib, 'frame.jpg');
+    fd.append('mask', S.maskBlob, 'mask.png');
+    fetch(base() + '/api/ocr', { method: 'POST', body: fd })
+      .then(function(r) { if (!r.ok) return r.text().then(function(t) { throw new Error(t); }); return r.json(); })
+      .then(function(d) {
+        setPipe('qwen', 'done');
+        var txt = d.description || '(Không có chữ)';
+        var sec = (d.latency_sec || 0).toFixed(1);
+        addCard('OCR', txt, sec, 'ocr', '');
+        setStatus('✅ OCR xong (' + sec + 's)', 'ok');
+        var isVi = /[àáảãạăặâầếềệđ]/i.test(txt);
+        if (S.tts) speak(txt, isVi ? 'vi' : 'en');
+        setBusy(false); setPipe('', '');
+      })
+      .catch(function(e) { setStatus('❌ OCR lỗi: ' + e.message, 'err'); setBusy(false); setPipe('', ''); });
+  }, 'image/jpeg', 0.92);
+}
+
+/* ========== MIC - GIỮ M ĐỂ GHI, THẢ M MỚI GỬI ========== */
+function requestMicPermission() {
+  if (micPermissionGranted) return Promise.resolve(true);
+  return navigator.mediaDevices.getUserMedia({ audio: true })
+    .then(function(stream) {
+      stream.getTracks().forEach(function(t) { t.stop(); });
+      micPermissionGranted = true;
+      setStatus('✅ Đã cấp quyền mic — giữ M để hỏi', 'ok');
+      return true;
+    })
+    .catch(function(err) {
+      setStatus('❌ Không cấp được quyền mic: ' + err.message, 'err');
+      return false;
+    });
+}
+
+function setMicUI(on) {
+  micBtn.classList.toggle('recording', on);
+  document.getElementById('qry').classList.toggle('listening', on);
+  micOverlay.classList.toggle('show', on);
+  voiceBanner.classList.toggle('hidden', !on);
+}
+
+function initRecognition() {
+  if (S.recognition) return;
+  if (!('webkitSpeechRecognition' in window)) return;
+
+  var SR = window.webkitSpeechRecognition;
+  S.recognition = new SR();
+  S.recognition.lang = 'vi-VN';
+  S.recognition.interimResults = true;
+  S.recognition.maxAlternatives = 1;
+  S.recognition.continuous = true;
+
+  S.recognition.onstart = function() {};
+
+  S.recognition.onresult = function(ev) {
+    var final = '', interim = '';
+    for (var i = 0; i < ev.results.length; i++) {
+      if (ev.results[i].isFinal) final += ev.results[i][0].transcript;
+      else interim += ev.results[i][0].transcript;
+    }
+    var txt = final || interim;
+    if (txt) S.voiceTranscript = txt;
+    document.getElementById('qry').value = S.voiceTranscript;
+    voiceBannerTxt.textContent = S.voiceTranscript
+      ? '"' + S.voiceTranscript + '"'
+      : 'Đang nghe... thả M để gửi';
+  };
+
+  S.recognition.onend = function() {
+    if (S.micPress || keyMPressed) {
+      // Vẫn giữ M → start lại cùng instance, không tạo mới
+      setTimeout(function() {
+        if (S.micPress || keyMPressed) {
+          try { S.recognition.start(); } catch(e) {}
+        }
+      }, 300);
+      return;
+    }
+    setMicUI(false);
+    if (S._pendingRelease) {
+      S._pendingRelease = false;
+      onMicReleased();
+    } else {
+      setStatus(S.camOn ? '📷 Sẵn sàng — giữ M để hỏi' : 'Mic đã dừng', S.camOn ? 'ok' : '');
+    }
+  };
+
+  S.recognition.onerror = function(ev) {
+    if (ev.error === 'no-speech' || ev.error === 'aborted') return;
+    setMicUI(false);
+    S.micPress = false; keyMPressed = false;
+    S._pendingRelease = false;
+    setStatus('❌ Lỗi mic: ' + ev.error, 'err');
+  };
+}
+
+function startMicRecord() {
+  if (!micPermissionGranted) {
+    setStatus('🔐 Click nút 🎙 trước 1 lần để cấp quyền mic', 'err');
+    return;
+  }
+  if (S.busy) return;
+  if (!('webkitSpeechRecognition' in window)) {
+    setStatus('⚠️ Trình duyệt không hỗ trợ nhận dạng giọng nói', 'err');
+    return;
+  }
+
+  S.voiceTranscript = '';
+  document.getElementById('qry').value = '';
+  setMicUI(true);
+  setStatus('🎙 Đang nghe... thả M để gửi', 'busy');
+
+  initRecognition();
+  try { S.recognition.start(); } catch(e) {}
+}
+
+function stopMicRecord() {
+  if (S.recognition) { try { S.recognition.stop(); } catch(e) {} }
+}
+
+// Chỉ gửi câu hỏi khi người dùng THẢ M (gọi từ onend sau khi recognition kết thúc)
+function onMicReleased() {
+  var q = (S.voiceTranscript || document.getElementById('qry').value || '').trim();
+  
+  if (!S.maskBlob) {
+    setStatus('⚠️ Hãy click vào vật thể trên video trước rồi hỏi', 'err');
+    return;
+  }
+  
+  document.getElementById('qry').value = q;
+  setStatus('🔍 Đang xử lý: "' + (q || '(mô tả tự động)') + '"...', 'busy');
+  doDescribe();
+}
+
+// Nút mic
+micBtn.addEventListener('click', function(e) {
+  e.preventDefault();
+  if (!micPermissionGranted) requestMicPermission();
+  else setStatus('✅ Mic sẵn sàng — giữ M để hỏi', 'ok');
+});
+
+micBtn.addEventListener('mousedown', function(e) {
+  e.preventDefault();
+  if (!micPermissionGranted) { requestMicPermission(); return; }
+  if (!S.micPress) { S.micPress = true; startMicRecord(); }
+});
+
+micBtn.addEventListener('mouseup', function() {
+  if (S.micPress) { 
+    S.micPress = false;
+    S._pendingRelease = true;
+    stopMicRecord();
+  }
+});
+
+micBtn.addEventListener('mouseleave', function() {
+  if (S.micPress) { 
+    S.micPress = false; 
+    stopMicRecord();
+  }
+});
+
+micBtn.addEventListener('touchstart', function(e) {
+  e.preventDefault();
+  if (!micPermissionGranted) { requestMicPermission(); return; }
+  if (!S.micPress) { S.micPress = true; startMicRecord(); }
+});
+
+micBtn.addEventListener('touchend', function(e) {
+  e.preventDefault();
+  if (S.micPress) { 
+    S.micPress = false;
+    S._pendingRelease = true;
+    stopMicRecord();
+  }
+});
+
+function clearQuery() { document.getElementById('qry').value = ''; S.voiceTranscript = ''; }
+
+function doReset() {
+  S.maskBlob = null; S.maskImg = null; S.snap = null; S.clickPt = null;
+  badge.style.display = 'none';
+  pipeline.classList.remove('show');
+  document.getElementById('btnDesc').disabled = true;
+  document.getElementById('btnOcr').disabled = true;
+  document.getElementById('btnReset').disabled = true;
+  setStatus(S.camOn ? '📷 Camera đang chạy — click vào vật' : 'Camera chưa bật', S.camOn ? 'ok' : '');
+}
+
+function setPipe(step, state) {
+  var steps = ['sam', 'setr', 'qwen', 'tts'];
+  if (!step) {
+    pipeline.classList.remove('show');
+    steps.forEach(function(s) { document.getElementById('ps-' + s).className = 'pipe-step'; });
+    return;
+  }
+  pipeline.classList.add('show');
+  var idx = steps.indexOf(step);
+  steps.forEach(function(s, i) {
+    var el = document.getElementById('ps-' + s);
+    if (i < idx) el.className = 'pipe-step done';
+    else if (i === idx) el.className = 'pipe-step ' + (state || '');
+    else el.className = 'pipe-step';
+  });
+}
+
+function addCard(label, text, sec, type, query) {
+  var es = document.getElementById('emptyState');
+  if (es) es.remove();
+  var el = document.createElement('div');
+  el.className = 'card';
+  var qHtml = query ? '<div class="card-query">❓ ' + escapeHtml(query) + '</div>' : '';
+  el.innerHTML = '<div class="card-head"><span class="tag tag-' + type + '">' + label + '</span></div>' +
+    qHtml +
+    '<div class="card-body">' + escapeHtml(text) + '</div>';
+  var r = document.getElementById('results');
+  r.insertBefore(el, r.firstChild);
+}
+
+function escapeHtml(s) {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+function toggleTts() {
+  S.tts = !S.tts;
+  document.getElementById('ttsToggle').className = 'tog' + (S.tts ? ' on' : '');
+}
+
+function speak(text, lang) {
+  if (!window.speechSynthesis) return;
+  window.speechSynthesis.cancel();
+  var u = new SpeechSynthesisUtterance(text);
+  u.lang = lang === 'vi' ? 'vi-VN' : 'en-US';
+  u.rate = 1.05;
+  window.speechSynthesis.speak(u);
+}
+
+function setStatus(msg, type) {
+  var box = document.getElementById('statusBox');
+  var ico = box.querySelector('.s-icon');
+  var oldSp = box.querySelector('.spinner');
+  if (oldSp) oldSp.remove();
+  box.className = 'status' + (type ? ' ' + type : '');
+  document.getElementById('statusTxt').textContent = msg;
+  if (type === 'busy') {
+    var sp = document.createElement('div'); sp.className = 'spinner';
+    box.insertBefore(sp, box.firstChild);
+    ico.style.display = 'none';
+  } else {
+    ico.style.display = '';
+    var iconMap = { ok: '✅', err: '❌', '': '💬' };
+    ico.textContent = iconMap[type] || '💬';
+  }
+}
+
+function setBusy(v) {
+  S.busy = v;
+  pane.classList.toggle('busy', v);
+  if (v) pane.classList.remove('live');
+  else if (S.camOn) pane.classList.add('live');
+}
+
+/* KEYBOARD - Giữ M ghi âm, thả M mới gửi */
+document.addEventListener('keydown', function(e) {
+  if (e.target.tagName === 'TEXTAREA' || e.target.tagName === 'INPUT') return;
+  if (e.key === 'd' || e.key === 'D') doDescribe();
+  if (e.key === 'o' || e.key === 'O') doOcr();
+  if (e.key === 'r' || e.key === 'R') doReset();
+  if (e.key === 't' || e.key === 'T') toggleTts();
+  if (e.key === 'm' || e.key === 'M') {
+    e.preventDefault();
+    if (!micPermissionGranted) {
+      setStatus('🔐 Click nút 🎙 trước để cấp quyền mic', 'err');
+      return;
+    }
+    if (!keyMPressed) {
+      keyMPressed = true;
+      if (!S.micPress) { S.micPress = true; startMicRecord(); }
+    }
+  }
+});
+
+document.addEventListener('keyup', function(e) {
+  if (e.key === 'm' || e.key === 'M') {
+    e.preventDefault();
+    if (keyMPressed) {
+      keyMPressed = false;
+      if (S.micPress) { 
+        S.micPress = false;
+        S._pendingRelease = true;
+        stopMicRecord();
+      }
+    }
+  }
+});
+
+window.addEventListener('blur', function() {
+  if (keyMPressed || S.micPress) {
+    keyMPressed = false; S.micPress = false;
+    stopMicRecord();
+  }
+});
+</script>
+</body>
+</html>
